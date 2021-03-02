@@ -5,29 +5,17 @@ from bokeh.io import output_notebook, show
 from bokeh.plotting import figure
 # output_notebook()
 import bokeh.sampledata
-# bokeh.sampledata.download()
-# create a new plot with default tools, using figure
-# p = figure(plot_width=400, plot_height=400)
-#
-# # add a circle renderer with x and y coordinates, size, color, and alpha
-# p.circle([1, 2, 3, 4, 5], [6, 7, 2, 4, 5], size=15, line_color="navy", fill_color="orange", fill_alpha=0.5)
-#
-# show(p) # show the results
-# create a new plot using figure
-# p = figure(plot_width=400, plot_height=400)
-#
-# # add a square renderer with a size, color, alpha, and sizes
-# p.square([1, 2, 3, 4, 5], [6, 7, 2, 4, 5], size=[10, 15, 20, 25, 30], color="firebrick", alpha=0.6)
-#
-# show(p) # show the results
-# from bokeh.sampledata.autompg import autompg as df # run df.head() to inspect
-# df1=df.iloc[0:11,]
+bokeh.sampledata.download()
+
+from bokeh.sampledata.autompg import autompg as df # run df.head() to inspect
+# Take first 10 rows 
+df1=df.iloc[0:11,]
 # # print(df.head())
-# p = figure(plot_width=400, plot_height=400)
+p = figure(plot_width=400, plot_height=400)
 #
 # # add a square renderer with a size, color, alpha, and sizes
-# p.square(df1['mpg'], df1['displ'], size=df1['accel'], color="firebrick", alpha=0.6)
-# show(p)
+p.square(df1['mpg'], df1['displ'], size=df1['accel'], color="firebrick", alpha=0.6)
+show(p)
 
 # EXERCISE: Look at the AAPL data from bokeh.sampledata.stocks and create a line plot using it
 from bokeh.sampledata.stocks import AAPL
