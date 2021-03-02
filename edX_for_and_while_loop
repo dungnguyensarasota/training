@@ -1,0 +1,7 @@
+print("Hello!")
+for x in range(0,10,2):
+    print(10-x)
+total = 0
+for x in range(1,end+1,1):
+    total+=x
+print(total)
