@@ -1,0 +1,18 @@
+import numpy as np
+s = 'azcbobobegghakl'
+longest_str = np.nan
+longest_count = 0 
+str_len = len(s)
+for i in range(str_len):
+    j=i+1
+    while j < str_len:
+        sub_str = s[i:j]
+        sub_list = list(map(str,sub_str))
+        sub_list_sort = sorted(sub_list)
+        if sub_list == sub_list_sort:
+            s_len = len(sub_list)
+            if s_len > longest_count:
+                longest_count = s_len
+                longest_str = sub_str
+        j+=1
+print("Longest substring in alphabetical order is: "+longest_str)
