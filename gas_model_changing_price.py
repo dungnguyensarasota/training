@@ -1,5 +1,5 @@
+from scipy.stats import linregress
 import numpy as np
-import numpy_financial as npf
 def compute_economic(project_length, mineral_tax, royalty_rate,\
                      investment, operating_cost_start, opex_increase,\
                      gas_price_start, gas_price_increase, discount_rate,\
@@ -44,6 +44,11 @@ def compute_economic(project_length, mineral_tax, royalty_rate,\
     net_operating_income_arr = gross_income_after_royalty_arr - mineral_tax_arr - operating_cost_arr
     net_cash_flow_arr = net_operating_income_arr - investment_arr
     net_cash_flow_cum_arr = np.cumsum(net_cash_flow_arr)
+    profit_year_arr = np.where(net_cash_flow_cum_arr>0)
+    profit_year = profit_year_arr[0][0]
+    cash_before = net_cash_flow_cum_arr[profit_year -1]
+    cash_after = net_cash_flow_cum_arr[profit_year]
+    slope, payout, r_value, p_value, std_err = linregress([cash_before, cash_after], [profit_year, profit_year+1])
 
     def discount_by_year(y, d_rate):
         """
