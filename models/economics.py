@@ -76,20 +76,18 @@ def IRR(cash_flow_arr, year_arr):
 
 class Economics:
 
-    def __init__(self, project_length, mineral_tax, royalty_rate,
-                       investment, operating_cost_start, opex_increase,
-                       gas_price_start, gas_price_increase, discount_rate,
-                       production_arr):
-        self.project_length = project_length
-        self.mineral_tax = mineral_tax
-        self.royalty_rate = royalty_rate
-        self.investment = investment
-        self.operating_cost_start = operating_cost_start
-        self.opex_increase = opex_increase
-        self.gas_price_start = gas_price_start
-        self.gas_price_increase = gas_price_increase
-        self.discount_rate = discount_rate
-        self.production_arr = production_arr
+    def __init__(self, params):
+        print(params)
+        self.project_length = params['project_length']
+        self.mineral_tax = params['mineral_tax']
+        self.royalty_rate = params['royalty_rate']
+        self.investment = params['investment']
+        self.operating_cost_start = params['operating_cost_start']
+        self.opex_increase = params['opex_increase']
+        self.gas_price_start = params['gas_price_start']
+        self.gas_price_increase = params['gas_price_increase']
+        self.discount_rate = params['discount_rate']
+        self.production_arr = params['production_arr']
 
     def compute(self):
         project_length = self.project_length
@@ -184,10 +182,15 @@ if __name__ == "__main__":
     production_arr = np.array([36500, 21900, 17520, 14016, 12614, 11353,
                                10218, 9196, 8736, 8299, 7884, 7490, 7116,
                                6760, 6422, 6101, 5796, 5506, 5231, 4969], dtype=float)
-    econ = Economics(project_length, mineral_tax, royalty_rate,
-                       investment, operating_cost_start, opex_increase,
-                       gas_price_start, gas_price_increase, discount_rate,
-                       production_arr)
+    params = {
+        'project_length': project_length, 'mineral_tax': mineral_tax,
+        'gas_price': gas_price_increase, 'royalty_rate': royalty_rate,
+        'opex_increase': opex_increase, 'cost_of_capital': cost_of_capital,
+        'discount_rate': discount_rate, 'gas_price_start': gas_price_start,
+        'operating_cost_start': operating_cost_start, 'investment': investment,
+        'production_arr': production_arr, 'gas_price_increase': gas_price_increase
+    }
+    econ = Economics(params)
     econ.plot()
     #present_value, profitablity, irr, payout, dpi,\
     #cash, cash_cum, revenue, income, cost = econ.compute()
