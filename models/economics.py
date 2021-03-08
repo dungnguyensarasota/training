@@ -81,6 +81,7 @@ class Economics:
             setattr(self, key, kwargs[key])
 
     def compute(self):
+        # TODO: Vectorize the code
         project_length = self.project_length
         mineral_tax = self.mineral_tax
         royalty_rate = self.royalty_rate
