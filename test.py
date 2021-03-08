@@ -1,7 +1,14 @@
-from scipy.stats import linregress
-x2 = 43648.41
-x1 = -1405.37
-y1 = 4
-y2 = 5
-slope, intercept, r_value, p_value, std_err = linregress([x1,x2],[y1,y2])
-print(slope,intercept)
+class Compute:
+
+    def __init__(self, num1, num2):
+        self.num1 = num1
+        self.num2 = num2
+
+
+    def total(self):
+        total = self.num1 + self.num2
+        return total
+
+x=Compute(2,3)
+y = x.total()
+print(y)

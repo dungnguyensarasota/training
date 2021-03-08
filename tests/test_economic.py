@@ -18,7 +18,7 @@ class TestEconomicMethods(unittest.TestCase):
     production_arr = np.array([36500, 21900, 17520, 14016, 12614, 11353, \
                                10218, 9196, 8736, 8299, 7884, 7490, 7116, \
                                6760, 6422, 6101, 5796, 5506, 5231, 4969], dtype=float)
-    present_value, profitablity, irr, payout = compute_economic(project_length, mineral_tax, royalty_rate, \
+    present_value, profitablity, irr, payout, dpi = compute_economic(project_length, mineral_tax, royalty_rate, \
                                                                 investment, operating_cost_start, opex_increase, \
                                                                 gas_price_start, gas_price_increase, discount_rate,
                                                                 production_arr)
@@ -33,6 +33,9 @@ class TestEconomicMethods(unittest.TestCase):
 
     def test_payout(self):
         self.assertAlmostEqual(self.payout, 4.031194375432525, places=5)
+
+    def test_dpi(self):
+        self.assertAlmostEqual(self.dpi, 1.5258019240696588, places=5)
 
 if __name__ == '__main__':
     unittest.main()

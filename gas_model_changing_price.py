@@ -93,7 +93,7 @@ def compute_economic(project_length, mineral_tax, royalty_rate, \
         present_value, profitability, irr, payout: float
 
     """
-    present_value, profitablity, irr, payout = (0, 0, 0, 0)
+    present_value, profitablity, irr, payout, dpi = (0, 0, 0, 0, 0)
     investment_arr = np.zeros(project_length)
     investment_arr[0] = investment
     year_arr = np.arange(1, project_length + 1, 1)
@@ -121,7 +121,9 @@ def compute_economic(project_length, mineral_tax, royalty_rate, \
     profitablity = net_operating_income_arr.sum() / investment
 
     irr = IRR(net_cash_flow_arr, year_arr)
-    return present_value, profitablity, irr, payout
+    dpi = present_value/investment
+
+    return present_value, profitablity, irr, payout, dpi
 
 
 if __name__ == "__main__":
@@ -140,8 +142,8 @@ if __name__ == "__main__":
     production_arr = np.array([36500, 21900, 17520, 14016, 12614, 11353, \
                                10218, 9196, 8736, 8299, 7884, 7490, 7116, \
                                6760, 6422, 6101, 5796, 5506, 5231, 4969], dtype=float)
-    present_value, profitablity, irr, payout = compute_economic(project_length, mineral_tax, royalty_rate, \
+    present_value, profitablity, irr, payout, dpi = compute_economic(project_length, mineral_tax, royalty_rate, \
                                                                 investment, operating_cost_start, opex_increase, \
                                                                 gas_price_start, gas_price_increase, discount_rate,
                                                                 production_arr)
-    print(present_value, profitablity, irr, payout)
+    print(present_value, profitablity, irr, payout, dpi)
