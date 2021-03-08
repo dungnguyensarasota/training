@@ -76,18 +76,9 @@ def IRR(cash_flow_arr, year_arr):
 
 class Economics:
 
-    def __init__(self, params):
-        print(params)
-        self.project_length = params['project_length']
-        self.mineral_tax = params['mineral_tax']
-        self.royalty_rate = params['royalty_rate']
-        self.investment = params['investment']
-        self.operating_cost_start = params['operating_cost_start']
-        self.opex_increase = params['opex_increase']
-        self.gas_price_start = params['gas_price_start']
-        self.gas_price_increase = params['gas_price_increase']
-        self.discount_rate = params['discount_rate']
-        self.production_arr = params['production_arr']
+    def __init__(self, **kwargs):
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
 
     def compute(self):
         project_length = self.project_length
@@ -190,7 +181,7 @@ if __name__ == "__main__":
         'operating_cost_start': operating_cost_start, 'investment': investment,
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
-    econ = Economics(params)
+    econ = Economics(**params)
     econ.plot()
     #present_value, profitablity, irr, payout, dpi,\
     #cash, cash_cum, revenue, income, cost = econ.compute()
