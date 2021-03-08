@@ -1,6 +1,7 @@
 from scipy.stats import linregress
 import numpy as np
-
+import matplotlib.pyplot as plt
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
 def value_by_year(y, start_value, growth_rate):
     """
@@ -139,6 +140,35 @@ class Economics:
         cost = operating_cost_arr
         return present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost
 
+    def plot(selfs):
+        present_value, profitablity, irr, payout, dpi, \
+        cash, cash_cum, revenue, income, cost = selfs.compute()
+        fig, axs = plt.subplots(2, 2)
+        cash_ax = axs[0,0]
+        cash_ax.plot(cash)
+        cash_ax.axhline(0, color='black', linewidth = 1)
+        cash_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        cash_ax.xaxis.set_major_locator(MultipleLocator(5))
+        cash_ax.set_title('Cash Flow')
+        cash_cum_ax = axs[0,1]
+        cash_cum_ax.plot(cash_cum, 'tab:orange')
+        cash_cum_ax.axhline(0, color='black', linewidth = 1)
+        cash_cum_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        cash_cum_ax.xaxis.set_major_locator(MultipleLocator(5))
+        cash_cum_ax.set_title('Cummulative Cash Flow')
+        revenue_ax = axs[1,0]
+        revenue_ax.plot(revenue, 'tab:green')
+        revenue_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        revenue_ax.xaxis.set_major_locator(MultipleLocator(5))
+        revenue_ax.set_title('Revenue')
+        income_ax = axs[1,1]
+        income_ax.plot(income, 'tab:green')
+        income_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        income_ax.xaxis.set_major_locator(MultipleLocator(5))
+        income_ax.set_title('Net Income')
+        plt.show()
+
+
 if __name__ == "__main__":
     project_length = 20
     mineral_tax = 2.5 / 100
@@ -158,6 +188,7 @@ if __name__ == "__main__":
                        investment, operating_cost_start, opex_increase,
                        gas_price_start, gas_price_increase, discount_rate,
                        production_arr)
-    present_value, profitablity, irr, payout, dpi,\
-    cash, cash_cum, revenue, income, cost = econ.compute()
-    print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
+    econ.plot()
+    #present_value, profitablity, irr, payout, dpi,\
+    #cash, cash_cum, revenue, income, cost = econ.compute()
+    #print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
