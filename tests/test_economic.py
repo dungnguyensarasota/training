@@ -1,5 +1,5 @@
 import unittest
-from economics import Economics
+from models.economics import Economics
 import numpy as np
 
 class TestEconomicMethods(unittest.TestCase):
@@ -18,10 +18,15 @@ class TestEconomicMethods(unittest.TestCase):
     production_arr = np.array([36500, 21900, 17520, 14016, 12614, 11353, \
                                10218, 9196, 8736, 8299, 7884, 7490, 7116, \
                                6760, 6422, 6101, 5796, 5506, 5231, 4969], dtype=float)
-    econ = Economics(project_length, mineral_tax, royalty_rate,
-                    investment, operating_cost_start, opex_increase,
-                    gas_price_start, gas_price_increase, discount_rate,
-                    production_arr)
+    params = {
+        'project_length': project_length, 'mineral_tax': mineral_tax,
+        'gas_price': gas_price_increase, 'royalty_rate': royalty_rate,
+        'opex_increase': opex_increase, 'cost_of_capital': cost_of_capital,
+        'discount_rate': discount_rate, 'gas_price_start': gas_price_start,
+        'operating_cost_start': operating_cost_start, 'investment': investment,
+        'production_arr': production_arr, 'gas_price_increase': gas_price_increase
+    }
+    econ = Economics(params)
     present_value, profitablity, irr, payout, dpi, \
     cash, cash_cum, revenue, income, cost = econ.compute()
     print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
