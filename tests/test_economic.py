@@ -25,5 +25,14 @@ class TestEconomicMethods(unittest.TestCase):
     def test_npv(self):
         self.assertAlmostEqual(self.present_value, 457740.5772208976, places=5)
 
+    def test_profitability(self):
+        self.assertAlmostEqual(self.profitablity, 2.801266038055139, places=5)
+
+    def test_irr(self):
+        self.assertAlmostEqual(self.irr, 27.71103365798545, places=5)
+
+    def test_payout(self):
+        self.assertAlmostEqual(self.payout, 4.031194375432525, places=5)
+
 if __name__ == '__main__':
     unittest.main()

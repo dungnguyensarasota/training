@@ -12,6 +12,7 @@ def value_by_year(y, start_value, growth_rate):
     current_value = start_value * (1 + growth_rate) ** (y - 1)
     return current_value
 
+
 def discount_by_year(y, d_rate):
     """
 
@@ -21,6 +22,55 @@ def discount_by_year(y, d_rate):
     """
     discount = (1 + d_rate) ** (y - 0.5)
     return discount
+
+
+def IRR(cash_flow_arr, year_arr):
+    """
+    :param year_arr: numpy array, dtype = int
+    :param cash_flow_arr: numpy array of cash flow, dtype = float
+    :return: IRR: float
+    """
+    discount_by_year_v = np.vectorize(discount_by_year)
+    #guess a rate that makes the NPV negative
+    neg_npv = 100
+    neg_rate_guess = 0
+
+    while neg_npv > 0:
+        d_arr = discount_by_year_v(year_arr, neg_rate_guess)
+        discounted_income_arr = cash_flow_arr / d_arr
+        neg_npv = discounted_income_arr.sum()
+        neg_rate_guess += 0.1
+
+    #Guess a rate that makes the NPV positive
+    pos_npv = -100
+    pos_rate_guess = 0
+
+    while pos_npv < 0:
+        d_arr = discount_by_year_v(year_arr, pos_rate_guess)
+        discounted_income_arr = cash_flow_arr / d_arr
+        pos_npv = discounted_income_arr.sum()
+        pos_rate_guess -= 0.1
+
+    #Now we have high rate and low rate
+    #Execute bi-section search
+
+    rate_low = pos_rate_guess
+    rate_high = neg_rate_guess
+    rate_guess = (rate_low + rate_high) / 2
+    eps = pow(10, -10)
+    diff = 100
+    while abs(diff) > eps:
+        d_arr = discount_by_year_v(year_arr, rate_guess)
+        discounted_income_arr = cash_flow_arr / d_arr
+        temp_npv = discounted_income_arr.sum()
+        diff = temp_npv - 0
+        if diff > 0:
+            rate_low = rate_guess
+        else:
+            rate_high = rate_guess
+        rate_guess = (rate_low + rate_high) / 2
+    irr = rate_guess * 100
+    return irr
 
 
 def compute_economic(project_length, mineral_tax, royalty_rate, \
@@ -70,45 +120,7 @@ def compute_economic(project_length, mineral_tax, royalty_rate, \
     present_value = discounted_net_operating_income_arr.sum()
     profitablity = net_operating_income_arr.sum() / investment
 
-    def IRR(cash_flow_arr):
-        """
-
-        :param cash_flow_arr: numpy array of cash flow, dtype = float
-        :return: IRR: float
-        """
-        neg_npv = 100
-        neg_rate_guess = 0
-        while neg_npv > 0:
-            d_arr = discount_by_year_v(year_arr, neg_rate_guess)
-            discounted_income_arr = cash_flow_arr / d_arr
-            neg_npv = discounted_income_arr.sum()
-            neg_rate_guess += 0.1
-        pos_npv = -100
-        pos_rate_guess = 0
-        while pos_npv < 0:
-            d_arr = discount_by_year_v(year_arr, pos_rate_guess)
-            discounted_income_arr = cash_flow_arr / d_arr
-            pos_npv = discounted_income_arr.sum()
-            pos_rate_guess -= 0.1
-        rate_low = pos_rate_guess
-        rate_high = neg_rate_guess
-        rate_guess = (rate_low + rate_high) / 2
-        eps = pow(10, -10)
-        diff = 100
-        while abs(diff) > eps:
-            d_arr = discount_by_year_v(year_arr, rate_guess)
-            discounted_income_arr = cash_flow_arr / d_arr
-            temp_npv = discounted_income_arr.sum()
-            diff = temp_npv - 0
-            if diff > 0:
-                rate_low = rate_guess
-            else:
-                rate_high = rate_guess
-            rate_guess = (rate_low + rate_high) / 2
-        irr = rate_guess * 100
-        return irr
-
-    irr = IRR(net_cash_flow_arr)
+    irr = IRR(net_cash_flow_arr, year_arr)
     return present_value, profitablity, irr, payout
 
 
