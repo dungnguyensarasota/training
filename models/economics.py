@@ -129,9 +129,9 @@ class Economics:
         cost = operating_cost_arr
         return present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost
 
-    def plot(selfs):
+    def plot(self):
         present_value, profitablity, irr, payout, dpi, \
-        cash, cash_cum, revenue, income, cost = selfs.compute()
+        cash, cash_cum, revenue, income, cost = self.compute()
         fig, axs = plt.subplots(2, 2)
         cash_ax = axs[0,0]
         cash_ax.plot(cash)
