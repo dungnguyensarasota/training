@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
+
 def value_by_year(y, start_value, growth_rate):
     """
     :param start_value: float, example start_value = 4.15
@@ -32,7 +33,7 @@ def IRR(cash_flow_arr, year_arr):
     :return: IRR: float
     """
     discount_by_year_v = np.vectorize(discount_by_year)
-    #guess a rate that makes the NPV negative
+    # guess a rate that makes the NPV negative
     neg_npv = 100
     neg_rate_guess = 0
 
@@ -42,7 +43,7 @@ def IRR(cash_flow_arr, year_arr):
         neg_npv = discounted_income_arr.sum()
         neg_rate_guess += 0.1
 
-    #Guess a rate that makes the NPV positive
+    # Guess a rate that makes the NPV positive
     pos_npv = -100
     pos_rate_guess = 0
 
@@ -52,8 +53,8 @@ def IRR(cash_flow_arr, year_arr):
         pos_npv = discounted_income_arr.sum()
         pos_rate_guess -= 0.1
 
-    #Now we have high rate and low rate
-    #Execute bi-section search
+    # Now we have high rate and low rate
+    # Execute bi-section search
 
     rate_low = pos_rate_guess
     rate_high = neg_rate_guess
@@ -93,8 +94,6 @@ class Economics:
         discount_rate = self.discount_rate
         production_arr = self.production_arr
 
-        present_value, profitablity, irr, payout, dpi,\
-            cash, cash_cum, revenue, income, cost= (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         investment_arr = np.zeros(project_length)
         investment_arr[0] = investment
         year_arr = np.arange(1, project_length + 1, 1)
@@ -134,24 +133,24 @@ class Economics:
         present_value, profitablity, irr, payout, dpi, \
         cash, cash_cum, revenue, income, cost = self.compute()
         fig, axs = plt.subplots(2, 2)
-        cash_ax = axs[0,0]
+        cash_ax = axs[0, 0]
         cash_ax.plot(cash)
-        cash_ax.axhline(0, color='black', linewidth = 1)
+        cash_ax.axhline(0, color='black', linewidth=1)
         cash_ax.xaxis.set_minor_locator(MultipleLocator(1))
         cash_ax.xaxis.set_major_locator(MultipleLocator(5))
         cash_ax.set_title('Cash Flow')
-        cash_cum_ax = axs[0,1]
+        cash_cum_ax = axs[0, 1]
         cash_cum_ax.plot(cash_cum, 'tab:orange')
-        cash_cum_ax.axhline(0, color='black', linewidth = 1)
+        cash_cum_ax.axhline(0, color='black', linewidth=1)
         cash_cum_ax.xaxis.set_minor_locator(MultipleLocator(1))
         cash_cum_ax.xaxis.set_major_locator(MultipleLocator(5))
         cash_cum_ax.set_title('Cummulative Cash Flow')
-        revenue_ax = axs[1,0]
+        revenue_ax = axs[1, 0]
         revenue_ax.plot(revenue, 'tab:green')
         revenue_ax.xaxis.set_minor_locator(MultipleLocator(1))
         revenue_ax.xaxis.set_major_locator(MultipleLocator(5))
         revenue_ax.set_title('Revenue')
-        income_ax = axs[1,1]
+        income_ax = axs[1, 1]
         income_ax.plot(income, 'tab:green')
         income_ax.xaxis.set_minor_locator(MultipleLocator(1))
         income_ax.xaxis.set_major_locator(MultipleLocator(5))
@@ -184,6 +183,6 @@ if __name__ == "__main__":
     }
     econ = Economics(**params)
     econ.plot()
-    #present_value, profitablity, irr, payout, dpi,\
-    #cash, cash_cum, revenue, income, cost = econ.compute()
-    #print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
+    # present_value, profitablity, irr, payout, dpi,\
+    # cash, cash_cum, revenue, income, cost = econ.compute()
+    # print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
