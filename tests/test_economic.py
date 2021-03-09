@@ -26,10 +26,10 @@ class TestEconomicMethods(unittest.TestCase):
         'operating_cost_start': operating_cost_start, 'investment': investment,
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
-    econ = Economics(params)
+    econ = Economics()
     present_value, profitablity, irr, payout, dpi, \
-    cash, cash_cum, revenue, income, cost = econ.compute()
-    print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
+    cash, cash_cum, revenue, income, cost = econ.compute(**params)
+    # print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
     def test_npv(self):
         self.assertAlmostEqual(self.present_value, 457740.5772208976, places=5)
 
