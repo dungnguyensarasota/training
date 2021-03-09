@@ -76,13 +76,12 @@ def IRR(cash_flow_arr, year_arr):
 
 class Economics:
 
-    def __init__(self):
-        pass
-
-    def compute(self, **kwargs):
-        # TODO: Vectorize the code
+    def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
+
+    def compute(self):
+        # TODO: Vectorize the code
         project_length = self.project_length
         mineral_tax = self.mineral_tax
         royalty_rate = self.royalty_rate
@@ -129,39 +128,31 @@ class Economics:
         revenue = gross_income_arr
         income = net_operating_income_arr
         cost = operating_cost_arr
-        self.present_value = present_value
-        self.profitability = profitablity
-        self.irr = irr
-        self.dpi = dpi
-        self.payout = payout
-        self.cash = cash
-        self.cash_cum = cash_cum
-        self.revenue = revenue
-        self.income = income
-        self.cost = cost
         return present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost
 
     def plot(self):
+        present_value, profitablity, irr, payout, dpi, \
+        cash, cash_cum, revenue, income, cost = self.compute()
         fig, axs = plt.subplots(2, 2)
         cash_ax = axs[0,0]
-        cash_ax.plot(self.cash)
+        cash_ax.plot(cash)
         cash_ax.axhline(0, color='black', linewidth = 1)
         cash_ax.xaxis.set_minor_locator(MultipleLocator(1))
         cash_ax.xaxis.set_major_locator(MultipleLocator(5))
         cash_ax.set_title('Cash Flow')
         cash_cum_ax = axs[0,1]
-        cash_cum_ax.plot(self.cash_cum, 'tab:orange')
+        cash_cum_ax.plot(cash_cum, 'tab:orange')
         cash_cum_ax.axhline(0, color='black', linewidth = 1)
         cash_cum_ax.xaxis.set_minor_locator(MultipleLocator(1))
         cash_cum_ax.xaxis.set_major_locator(MultipleLocator(5))
         cash_cum_ax.set_title('Cummulative Cash Flow')
         revenue_ax = axs[1,0]
-        revenue_ax.plot(self.revenue, 'tab:green')
+        revenue_ax.plot(revenue, 'tab:green')
         revenue_ax.xaxis.set_minor_locator(MultipleLocator(1))
         revenue_ax.xaxis.set_major_locator(MultipleLocator(5))
         revenue_ax.set_title('Revenue')
         income_ax = axs[1,1]
-        income_ax.plot(self.income, 'tab:green')
+        income_ax.plot(income, 'tab:green')
         income_ax.xaxis.set_minor_locator(MultipleLocator(1))
         income_ax.xaxis.set_major_locator(MultipleLocator(5))
         income_ax.set_title('Net Income')
@@ -191,8 +182,7 @@ if __name__ == "__main__":
         'operating_cost_start': operating_cost_start, 'investment': investment,
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
-    econ = Economics()
-    econ.compute(**params)
+    econ = Economics(**params)
     econ.plot()
     #present_value, profitablity, irr, payout, dpi,\
     #cash, cash_cum, revenue, income, cost = econ.compute()
