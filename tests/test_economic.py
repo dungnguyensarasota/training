@@ -27,14 +27,14 @@ class TestEconomicMethods(unittest.TestCase):
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
     econ = Economics()
-    present_value, profitablity, irr, payout, dpi, \
+    present_value, profitability, irr, payout, dpi, \
     cash, cash_cum, revenue, income, cost = econ.compute(**params)
-    # print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
+
     def test_npv(self):
         self.assertAlmostEqual(self.present_value, 457740.5772208976, places=5)
 
     def test_profitability(self):
-        self.assertAlmostEqual(self.profitablity, 2.801266038055139, places=5)
+        self.assertAlmostEqual(self.profitability, 2.801266038055139, places=5)
 
     def test_irr(self):
         self.assertAlmostEqual(self.irr, 27.71103365798545, places=5)

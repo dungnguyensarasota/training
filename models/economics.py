@@ -83,16 +83,16 @@ class Economics:
         # TODO: Vectorize the code
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        project_length = self.project_length
-        mineral_tax = self.mineral_tax
-        royalty_rate = self.royalty_rate
-        investment = self.investment
-        operating_cost_start = self.operating_cost_start
-        opex_increase = self.opex_increase
-        gas_price_start = self.gas_price_start
-        gas_price_increase = self.gas_price_increase
-        discount_rate = self.discount_rate
-        production_arr = self.production_arr
+        project_length = kwargs['project_length']
+        mineral_tax = kwargs['mineral_tax']
+        royalty_rate = kwargs['royalty_rate']
+        investment = kwargs['investment']
+        operating_cost_start = kwargs['operating_cost_start']
+        opex_increase = kwargs['opex_increase']
+        gas_price_start = kwargs['gas_price_start']
+        gas_price_increase = kwargs['gas_price_increase']
+        discount_rate = kwargs['discount_rate']
+        production_arr = kwargs['production_arr']
 
         present_value, profitablity, irr, payout, dpi,\
             cash, cash_cum, revenue, income, cost= (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -120,7 +120,7 @@ class Economics:
         discount_arr = discount_by_year_v(year_arr, discount_rate)
         discounted_net_operating_income_arr = net_operating_income_arr / discount_arr
         present_value = discounted_net_operating_income_arr.sum()
-        profitablity = net_operating_income_arr.sum() / investment
+        profitability = net_operating_income_arr.sum() / investment
 
         irr = IRR(net_cash_flow_arr, year_arr)
         dpi = present_value / investment
@@ -133,13 +133,13 @@ class Economics:
         self.irr = irr
         self.payout = payout
         self.dpi = dpi
-        self.profitability = profitablity
+        self.profitability = profitability
         self.cash = cash
         self.cash_cum =cash_cum
         self.revenue = revenue
         self.income = income
         self.cost = cost
-        return present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost
+        return present_value, profitability, irr, payout, dpi, cash, cash_cum, revenue, income, cost
 
     def plot(self):
         fig, axs = plt.subplots(2, 2)
@@ -167,6 +167,33 @@ class Economics:
         income_ax.set_title('Net Income')
         plt.show()
 
+    def generate_scenario(self, n_sce, sim_params, base_params):
+        sim_var = list(sim_params.keys())[0]
+        sim_info = list(sim_params.values())[0]
+        sim_scale = sim_info['scale']
+        sim_type = sim_info['type']
+        sim_loc = sim_info['loc']
+
+        if sim_type == 'normal':
+            sim_arr = np.random.normal(sim_loc, sim_scale, n_sce)
+        elif sim_type == 'logistic':
+            sim_arr = np.random.logistic(sim_loc, sim_scale, n_sce)
+
+        sim_output = {'irr':[], 'present_value':[], 'payout':[], 'dpi':[], 'profitability':[]}
+
+        for sim_val in sim_arr:
+            base_params[sim_var] = sim_val
+            # print(base_params)
+            present_value, profitability, irr, payout, dpi, \
+            cash, cash_cum, revenue, income, cost = self.compute(**base_params)
+            sim_output['present_value'].append(present_value)
+            sim_output['irr'].append(irr)
+            sim_output['payout'].append(payout)
+            sim_output['profitability'].append(profitability)
+            sim_output['dpi'].append(dpi)
+
+        return sim_output
+
 
 if __name__ == "__main__":
     project_length = 20
@@ -193,7 +220,8 @@ if __name__ == "__main__":
     }
     econ = Economics()
     econ.compute(**params)
-    econ.plot()
-    #present_value, profitablity, irr, payout, dpi,\
-    #cash, cash_cum, revenue, income, cost = econ.compute()
-    #print(present_value, profitablity, irr, payout, dpi, cash, cash_cum, revenue, income, cost)
+    # econ.plot()
+    sim_params = {'gas_price_start':{'type':'normal', 'loc':4.15, 'scale': 0.1}}
+    n_sce = 1000
+    sim = econ.generate_scenario(n_sce, sim_params, params)
+    # print(sim)
