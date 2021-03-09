@@ -167,8 +167,30 @@ class Economics:
         income_ax.set_title('Net Income')
         plt.show()
 
+    def scenario_compute(self, sce_val, sce_var_name, base_params):
+        """
+
+        :param sce_val: value of the simulated variable, float
+        :param sce_var_name: name of the simulated variable, ex. gas_price_start
+        :param base_params: base parameters dictionary where the base output is computed
+        :return: list of present_value, profitability, irr, payout, dpi, cash, cash_cum, revenue, income, cost
+        """
+        base_params[sce_var_name] = sce_val
+        # print(base_params)
+        present_value, profitability, irr, payout, dpi, \
+        cash, cash_cum, revenue, income, cost = self.compute(**base_params)
+        return [present_value, profitability, irr, payout, dpi, cash, cash_cum, revenue, income, cost]
+
     def generate_scenario(self, n_sce, sim_params, base_params):
+        """
+
+        :param n_sce: Number of scenarios,int, n_sce = 1000,
+        :param sim_params: a dictionary with key is the name of the simulated variable, ex. gas_price_start
+        :param base_params: base parameters dictionary where the base output is computed
+        :return: numpy array of list of present_value, profitability, irr, payout, dpi, cash, cash_cum, revenue,
+        """
         sim_var = list(sim_params.keys())[0]
+        print(sim_var)
         sim_info = list(sim_params.values())[0]
         sim_scale = sim_info['scale']
         sim_type = sim_info['type']
@@ -179,19 +201,20 @@ class Economics:
         elif sim_type == 'logistic':
             sim_arr = np.random.logistic(sim_loc, sim_scale, n_sce)
 
-        sim_output = {'irr':[], 'present_value':[], 'payout':[], 'dpi':[], 'profitability':[]}
-
-        for sim_val in sim_arr:
-            base_params[sim_var] = sim_val
-            # print(base_params)
-            present_value, profitability, irr, payout, dpi, \
-            cash, cash_cum, revenue, income, cost = self.compute(**base_params)
-            sim_output['present_value'].append(present_value)
-            sim_output['irr'].append(irr)
-            sim_output['payout'].append(payout)
-            sim_output['profitability'].append(profitability)
-            sim_output['dpi'].append(dpi)
-
+        # sim_output = {'irr':[], 'present_value':[], 'payout':[], 'dpi':[], 'profitability':[]}
+        scenario_compute_v = np.vectorize(self.scenario_compute)
+        sim_output = scenario_compute_v(sim_arr, sim_var, base_params)
+        # for sim_val in sim_arr:
+        #     base_params[sim_var] = sim_val
+        #     # print(base_params)
+        #     present_value, profitability, irr, payout, dpi, \
+        #     cash, cash_cum, revenue, income, cost = self.compute(**base_params)
+        #     sim_output['present_value'].append(present_value)
+        #     sim_output['irr'].append(irr)
+        #     sim_output['payout'].append(payout)
+        #     sim_output['profitability'].append(profitability)
+        #     sim_output['dpi'].append(dpi)
+        print(sim_output)
         return sim_output
 
 
