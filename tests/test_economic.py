@@ -3,6 +3,7 @@ from models.economics import Economics
 import numpy as np
 
 class TestEconomicMethods(unittest.TestCase):
+
     # parameter values
     project_length = 20
     mineral_tax = 2.5 / 100
@@ -27,8 +28,10 @@ class TestEconomicMethods(unittest.TestCase):
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
     econ = Economics()
-    present_value, profitability, irr, payout, dpi, \
-    cash, cash_cum, revenue, income, cost = econ.compute(**params)
+
+    # present_value, profitability, irr, payout, dpi, \
+    # cash, cash_cum, revenue, income, cost = \
+    econ.compute(**params)
 
     def test_npv(self):
         self.assertAlmostEqual(self.present_value, 457740.5772208976, places=5)
