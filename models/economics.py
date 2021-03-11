@@ -163,6 +163,13 @@ class Economics:
         self.cost = cost
 
     def compute_vectorize(self, n_sce, sim_params, params):
+        """
+        compute_vectorize computes economics for arrays of input
+        :param n_sce:
+        :param sim_params:
+        :param params:
+        :return:
+        """
 
         # Default seed
         sp.random.seed(12345)
@@ -281,7 +288,6 @@ class Economics:
         self.cost_sim = cost
         self.sim_arr = sim_arr
         self.sim_var = sim_var
-        return irr
 
     def plot(self):
         fig, axs = plt.subplots(2, 2)
