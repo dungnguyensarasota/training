@@ -16,6 +16,7 @@ class TestEconomicMethods(unittest.TestCase):
     operating_cost_start = 6000
     investment = 300000
     # Some input arrays
+
     production_arr = np.array([36500, 21900, 17520, 14016, 12614, 11353, \
                                10218, 9196, 8736, 8299, 7884, 7490, 7116, \
                                6760, 6422, 6101, 5796, 5506, 5231, 4969], dtype=float)

@@ -1,4 +1,3 @@
-import unittest
 from models.economics import Economics
 import numpy as np
 import scipy as sp
