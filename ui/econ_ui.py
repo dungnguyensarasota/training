@@ -16,11 +16,6 @@ investment = 300000
 x = np.linspace(0, 10, 500)
 y = np.sin(x)
 
-source = ColumnDataSource(data=dict(x=x, y=y))
-
-plot = figure(y_range=(-10, 10), plot_width=400, plot_height=400)
-
-plot.line('x', 'y', source=source, line_width=3, line_alpha=0.6)
 
 gas_slider = Slider(start=2.0, end=10, value=4.15, step=.1, title="Gas Price")
 gas_growth_slider = Slider(start=0.01, end=0.2, value=0.05, step=.01, title="Gas Price Growth Rate")
@@ -51,7 +46,7 @@ discount_slider = Slider(start=0.01, end=0.3, value=0.1, step=.05, title="Discou
 # offset_slider.js_on_change('value', callback)
 
 layout = row(
-    plot,
+    # plot,
     column(gas_slider, gas_growth_slider, opex_slider, opex_growth_slider, investment_slider,
            tax_slider, royalty_slider, discount_slider),
 )
