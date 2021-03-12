@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 import scipy as sp
 import numpy_financial as npf
-
+from scipy import stats
 
 def value_by_year(y, start_value, growth_rate):
     """
@@ -27,8 +27,8 @@ def discount_by_year(y, d_rate):
     discount = (1 + d_rate) ** (y - 0.5)
     return discount
 
-def payout_cal(net_cash_flow_cum_arr):
 
+def payout_cal(net_cash_flow_cum_arr):
     profit_year_arr = np.where(net_cash_flow_cum_arr > 0)
     profit_year = profit_year_arr[0][0]
     cash_before = net_cash_flow_cum_arr[profit_year - 1]
@@ -47,7 +47,7 @@ def IRR(cash_flow_arr, year_arr):
 
     # guess a rate that makes the NPV negative
     neg_npv = 100
-    neg_rate_guess = 27.71/100
+    neg_rate_guess = 27.71 / 100
 
     while neg_npv > 0:
         d_arr = discount_by_year_v(year_arr, neg_rate_guess)
@@ -57,7 +57,7 @@ def IRR(cash_flow_arr, year_arr):
 
     # Guess a rate that makes the NPV positive
     pos_npv = -100
-    pos_rate_guess = 27.71/100
+    pos_rate_guess = 27.71 / 100
 
     while pos_npv < 0:
         d_arr = discount_by_year_v(year_arr, pos_rate_guess)
@@ -100,6 +100,73 @@ class Economics:
         self.revenue = None
         self.income = None
         self.cost = None
+        self.present_value_sim = None
+        self.irr_sim = None
+        self.payout_sim = None
+        self.dpi_sim = None
+        self.profitability_sim = None
+        self.cash_sim = None
+        self.cash_cum_sim = None
+        self.revenue_sim = None
+        self.income_sim = None
+        self.cost_sim = None
+        self.sim_arr = None
+        self.sim_var = None
+        self.present_value_mean = None
+        self.present_value_std = None
+        self.present_value_10pct = None
+        self.present_value_20pct = None
+        self.present_value_30pct = None
+        self.present_value_40pct = None
+        self.present_value_50pct = None
+        self.present_value_60pct = None
+        self.present_value_70pct = None
+        self.present_value_80pct = None
+        self.present_value_90pct = None
+        self.irr_mean = None
+        self.irr_std = None
+        self.irr_10pct = None
+        self.irr_20pct = None
+        self.irr_30pct = None
+        self.irr_40pct = None
+        self.irr_50pct = None
+        self.irr_60pct = None
+        self.irr_70pct = None
+        self.irr_80pct = None
+        self.irr_90pct = None
+        self.payout_mean = None
+        self.payout_std = None
+        self.payout_10pct = None
+        self.payout_20pct = None
+        self.payout_30pct = None
+        self.payout_40pct = None
+        self.payout_50pct = None
+        self.payout_60pct = None
+        self.payout_70pct = None
+        self.payout_80pct = None
+        self.payout_90pct = None
+        self.dpi_mean = None
+        self.dpi_std = None
+        self.dpi_10pct = None
+        self.dpi_20pct = None
+        self.dpi_30pct = None
+        self.dpi_40pct = None
+        self.dpi_50pct = None
+        self.dpi_60pct = None
+        self.dpi_70pct = None
+        self.dpi_80pct = None
+        self.dpi_90pct = None
+        self.profit_mean = None
+        self.profit_std = None
+        self.profit_10pct = None
+        self.profit_20pct = None
+        self.profit_30pct = None
+        self.profit_40pct = None
+        self.profit_50pct = None
+        self.profit_60pct = None
+        self.profit_70pct = None
+        self.profit_80pct = None
+        self.profit_90pct = None
 
     def compute(self, **kwargs):
         # TODO: Vectorize the code
@@ -162,15 +229,185 @@ class Economics:
         self.income = income
         self.cost = cost
 
-    def compute_vectorize(self, n_sce, sim_params, params):
+    def compute_vectorize(self, params):
         """
         compute_vectorize computes economics for arrays of input
-        :param n_sce:
-        :param sim_params:
-        :param params:
-        :return:
+        :param : a dictionary with following keys:
+        production_arr: float numpy array dim = n_sce * project_length
+        investment_arr: float numpy array dim = n_sce * project_length
+        gas_price_arr: float numpy array dim = n_sce * project_length
+        operating_cost_arr: float numpy array dim = n_sce * project_length
+        discount_arr: float numpy array dim = n_sce * project_length
+        mineral_tax_arr: float numpy array dim = n_sce * 1
+        royalty_arr: float numpy array dim = n_sce * 1
+        sim_arr: float numpy array dim = n_sce
+        sim_var: string, name of the simulation variable
+        :return: Update self attributes present_value, irr, payout, dpi, profitability,
+        cash, cash_cum, revenue, income, cost
+        """
+        production_arr = params['production_arr']
+        investment_arr = params['investment_arr']
+        gas_price_arr = params['gas_price_arr']
+        operating_cost_arr = params['operrating_cost_arr']
+        discount_arr = params['discount_arr']
+        mineral_tax_arr = params['mineral_tax_arr']
+        royalty_arr = params['royalty_arr']
+        sim_arr = params['sim_arr']
+        sim_var = params['sim_var']
+
+        gross_income_arr = gas_price_arr * production_arr
+        royalty_arr = gross_income_arr * royalty_arr
+        gross_income_after_royalty_arr = gross_income_arr - royalty_arr
+        net_operating_income_arr = gross_income_after_royalty_arr - mineral_tax_arr - operating_cost_arr
+        net_cash_flow_arr = net_operating_income_arr - investment_arr
+        net_cash_flow_cum_arr = np.cumsum(net_cash_flow_arr, axis=1)
+        discounted_net_operating_income_arr = net_operating_income_arr / discount_arr
+        present_value = np.sum(discounted_net_operating_income_arr, axis=1)
+        dpi = present_value / investment_arr[:, 0]
+        profitability = np.sum(net_operating_income_arr, axis=1) / investment_arr[:, 0]
+        cash = net_cash_flow_arr
+        cash_cum = net_cash_flow_cum_arr
+        revenue = gross_income_arr
+        income = net_operating_income_arr
+        cost = operating_cost_arr
+        irr = [npf.irr(x) * 100 for x in net_cash_flow_arr]
+        payout = [payout_cal(x) for x in net_cash_flow_cum_arr]
+        self.present_value_sim = present_value
+        self.irr_sim = irr
+        self.payout_sim = payout
+        self.dpi_sim = dpi
+        self.profitability_sim = profitability
+        self.cash_sim = cash
+        self.cash_cum_sim = cash_cum
+        self.revenue_sim = revenue
+        self.income_sim = income
+        self.cost_sim = cost
+        self.sim_arr = sim_arr
+        self.sim_var = sim_var
+        #     generate some stats
+        self.present_value_mean = np.mean(present_value)
+        self.present_value_std = np.std(present_value)
+        self.present_value_10pct = np.quantile(present_value, 0.1)
+        self.present_value_20pct = np.quantile(present_value, 0.2)
+        self.present_value_30pct = np.quantile(present_value, 0.3)
+        self.present_value_40pct = np.quantile(present_value, 0.4)
+        self.present_value_50pct = np.quantile(present_value, 0.5)
+        self.present_value_60pct = np.quantile(present_value, 0.6)
+        self.present_value_70pct = np.quantile(present_value, 0.7)
+        self.present_value_80pct = np.quantile(present_value, 0.8)
+        self.present_value_90pct = np.quantile(present_value, 0.9)
+        self.irr_mean = np.mean(irr)
+        self.irr_std = np.std(irr)
+        self.irr_10pct = np.quantile(irr, 0.1)
+        self.irr_20pct = np.quantile(irr, 0.2)
+        self.irr_30pct = np.quantile(irr, 0.3)
+        self.irr_40pct = np.quantile(irr, 0.4)
+        self.irr_50pct = np.quantile(irr, 0.5)
+        self.irr_60pct = np.quantile(irr, 0.6)
+        self.irr_70pct = np.quantile(irr, 0.7)
+        self.irr_80pct = np.quantile(irr, 0.8)
+        self.irr_90pct = np.quantile(irr, 0.9)
+        self.payout_mean = np.mean(payout)
+        self.payout_std = np.std(payout)
+        self.payout_10pct = np.quantile(payout, 0.1)
+        self.payout_20pct = np.quantile(payout, 0.2)
+        self.payout_30pct = np.quantile(payout, 0.3)
+        self.payout_40pct = np.quantile(payout, 0.4)
+        self.payout_50pct = np.quantile(payout, 0.5)
+        self.payout_60pct = np.quantile(payout, 0.6)
+        self.payout_70pct = np.quantile(payout, 0.7)
+        self.payout_80pct = np.quantile(payout, 0.8)
+        self.payout_90pct = np.quantile(payout, 0.9)
+        self.dpi_mean = np.mean(dpi)
+        self.dpi_std = np.std(dpi)
+        self.dpi_10pct = np.quantile(dpi, 0.1)
+        self.dpi_20pct = np.quantile(dpi, 0.2)
+        self.dpi_30pct = np.quantile(dpi, 0.3)
+        self.dpi_40pct = np.quantile(dpi, 0.4)
+        self.dpi_50pct = np.quantile(dpi, 0.5)
+        self.dpi_60pct = np.quantile(dpi, 0.6)
+        self.dpi_70pct = np.quantile(dpi, 0.7)
+        self.dpi_80pct = np.quantile(dpi, 0.8)
+        self.dpi_90pct = np.quantile(dpi, 0.9)
+        self.profit_mean = np.mean(profitability)
+        self.profit_std = np.std(profitability)
+        self.profit_10pct = np.quantile(profitability, 0.1)
+        self.profit_20pct = np.quantile(profitability, 0.2)
+        self.profit_30pct = np.quantile(profitability, 0.3)
+        self.profit_40pct = np.quantile(profitability, 0.4)
+        self.profit_50pct = np.quantile(profitability, 0.5)
+        self.profit_60pct = np.quantile(profitability, 0.6)
+        self.profit_70pct = np.quantile(profitability, 0.7)
+        self.profit_80pct = np.quantile(profitability, 0.8)
+        self.profit_90pct = np.quantile(profitability, 0.9)
+
+
+    def plot(self):
+        fig, axs = plt.subplots(2, 2)
+        cash_ax = axs[0, 0]
+        cash_ax.plot(self.cash)
+        cash_ax.axhline(0, color='black', linewidth=1)
+        cash_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        cash_ax.xaxis.set_major_locator(MultipleLocator(5))
+        cash_ax.set_title('Cash Flow')
+        cash_cum_ax = axs[0, 1]
+        cash_cum_ax.plot(self.cash_cum, 'tab:orange')
+        cash_cum_ax.axhline(0, color='black', linewidth=1)
+        cash_cum_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        cash_cum_ax.xaxis.set_major_locator(MultipleLocator(5))
+        cash_cum_ax.set_title('Cumulative Cash Flow')
+        revenue_ax = axs[1, 0]
+        revenue_ax.plot(self.revenue, 'tab:green')
+        revenue_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        revenue_ax.xaxis.set_major_locator(MultipleLocator(5))
+        revenue_ax.set_title('Revenue')
+        income_ax = axs[1, 1]
+        income_ax.plot(self.income, 'tab:green')
+        income_ax.xaxis.set_minor_locator(MultipleLocator(1))
+        income_ax.xaxis.set_major_locator(MultipleLocator(5))
+        income_ax.set_title('Net Income')
+        plt.show()
+
+    def plot_scenario(self, show=False):
+        fig, axs = plt.subplots(2, 3)
+        sim_ax = axs[0, 0]
+        sim_ax.hist(self.sim_arr)
+        sim_ax.set_title(self.sim_var.capitalize() + " Input")
+        npv_ax = axs[0, 1]
+        npv_ax.hist(self.present_value_sim)
+        npv_ax.set_title('Present Value')
+        irr_ax = axs[0, 2]
+        irr_ax.hist(self.irr_sim)
+        irr_ax.set_title('IRR')
+        payout_ax = axs[1, 0]
+        payout_ax.hist(self.payout_sim)
+        payout_ax.set_title('Payout')
+        dpi_ax = axs[1, 1]
+        dpi_ax.hist(self.dpi_sim)
+        dpi_ax.set_title('DPI')
+        profit_ax = axs[1, 2]
+        profit_ax.hist(self.profitability_sim)
+        profit_ax.set_title('Profitability')
+        if show:
+            plt.show()
+
+    def generate_scenario(self, n_sce, sim_params, params):
         """
 
+        :param n_sce: Number of scenarios,int, n_sce = 1000,
+        :param sim_params: a dictionary with key is the name of the simulated variable, ex. gas_price_start
+        :param params: base parameters dictionary where the base output is computed
+        :return: a dictionary with following keys:
+        production_arr: float numpy array dim = n_sce * project_length
+        investment_arr: float numpy array dim = n_sce * project_length
+        gas_price_arr: float numpy array dim = n_sce * project_length
+        operating_cost_arr: float numpy array dim = n_sce * project_length
+        discount_arr: float numpy array dim = n_sce * project_length
+        mineral_tax_arr: float numpy array dim = n_sce * 1
+        royalty_arr: float numpy array dim = n_sce * 1
+        sim_arr: float numpy array dim = n_sce
+        sim_var: string, name of the simulation variable
+        """
         # Default seed
         sp.random.seed(12345)
 
@@ -190,6 +427,7 @@ class Economics:
         value_by_year_v = np.vectorize(value_by_year)
         gas_price_unit_arr = value_by_year_v(year_arr, 1, gas_price_increase)
         operating_cost_unit_arr = value_by_year_v(year_arr, 1, opex_increase)
+
         # Investment
         investment_init_arr = np.zeros(project_length)
         investment_init_arr[0] = investment
@@ -259,134 +497,19 @@ class Economics:
         elif sim_var == 'production_array':
             production_arr = sim_info['production_arr']
 
-        gross_income_arr = gas_price_arr * production_arr
-        royalty_arr = gross_income_arr * royalty_arr
-        gross_income_after_royalty_arr = gross_income_arr - royalty_arr
-        net_operating_income_arr = gross_income_after_royalty_arr - mineral_tax_arr - operating_cost_arr
-        net_cash_flow_arr = net_operating_income_arr - investment_arr
-        net_cash_flow_cum_arr = np.cumsum(net_cash_flow_arr, axis=1)
-        discounted_net_operating_income_arr = net_operating_income_arr / discount_arr
-        present_value = np.sum(discounted_net_operating_income_arr, axis=1)
-        dpi = present_value / investment_arr[:, 0]
-        profitability = np.sum(net_operating_income_arr, axis = 1) / investment_arr[:,0]
-        cash = net_cash_flow_arr
-        cash_cum = net_cash_flow_cum_arr
-        revenue = gross_income_arr
-        income = net_operating_income_arr
-        cost = operating_cost_arr
-        irr = [npf.irr(x)*100 for x in net_cash_flow_arr]
-        payout = [payout_cal(x) for x in net_cash_flow_cum_arr]
-        self.present_value_sim = present_value
-        self.irr_sim = irr
-        self.payout_sim = payout
-        self.dpi_sim = dpi
-        self.profitability_sim = profitability
-        self.cash_sim = cash
-        self.cash_cum_sim = cash_cum
-        self.revenue_sim = revenue
-        self.income_sim = income
-        self.cost_sim = cost
-        self.sim_arr = sim_arr
-        self.sim_var = sim_var
+        sce_params = {
+            'production_arr': production_arr,
+            'investment_arr': investment_arr,
+            'gas_price_arr': gas_price_arr,
+            'operrating_cost_arr': operating_cost_arr,
+            'discount_arr': discount_arr,
+            'mineral_tax_arr': mineral_tax_arr,
+            'royalty_arr': royalty_arr,
+            'sim_arr': sim_arr,
+            'sim_var': sim_var
 
-    def plot(self):
-        fig, axs = plt.subplots(2, 2)
-        cash_ax = axs[0, 0]
-        cash_ax.plot(self.cash)
-        cash_ax.axhline(0, color='black', linewidth=1)
-        cash_ax.xaxis.set_minor_locator(MultipleLocator(1))
-        cash_ax.xaxis.set_major_locator(MultipleLocator(5))
-        cash_ax.set_title('Cash Flow')
-        cash_cum_ax = axs[0, 1]
-        cash_cum_ax.plot(self.cash_cum, 'tab:orange')
-        cash_cum_ax.axhline(0, color='black', linewidth=1)
-        cash_cum_ax.xaxis.set_minor_locator(MultipleLocator(1))
-        cash_cum_ax.xaxis.set_major_locator(MultipleLocator(5))
-        cash_cum_ax.set_title('Cummulative Cash Flow')
-        revenue_ax = axs[1, 0]
-        revenue_ax.plot(self.revenue, 'tab:green')
-        revenue_ax.xaxis.set_minor_locator(MultipleLocator(1))
-        revenue_ax.xaxis.set_major_locator(MultipleLocator(5))
-        revenue_ax.set_title('Revenue')
-        income_ax = axs[1, 1]
-        income_ax.plot(self.income, 'tab:green')
-        income_ax.xaxis.set_minor_locator(MultipleLocator(1))
-        income_ax.xaxis.set_major_locator(MultipleLocator(5))
-        income_ax.set_title('Net Income')
-        plt.show()
-
-    def plot_scenario(self):
-        fig, axs = plt.subplots(2, 3)
-        sim_ax = axs[0, 0]
-        sim_ax.hist(self.sim_arr)
-        sim_ax.set_title(self.sim_var.capitalize() + " Input")
-        npv_ax = axs[0, 1]
-        npv_ax.hist(self.present_value_sim)
-        npv_ax.set_title('Present Value')
-        irr_ax = axs[0, 2]
-        irr_ax.hist(self.irr_sim)
-        irr_ax.set_title('IRR')
-        payout_ax = axs[1, 0]
-        payout_ax.hist(self.payout_sim)
-        payout_ax.set_title('Payout')
-        dpi_ax = axs[1, 1]
-        dpi_ax.hist(self.dpi_sim)
-        dpi_ax.set_title('DPI')
-        profit_ax = axs[1, 2]
-        profit_ax.hist(self.profitability_sim)
-        profit_ax.set_title('Profitability')
-        plt.show()
-
-    def scenario_compute(self, sce_val, sce_var_name, base_params):
-        """
-
-        :param sce_val: value of the simulated variable, float
-        :param sce_var_name: name of the simulated variable, ex. gas_price_start
-        :param base_params: base parameters dictionary where the base output is computed
-        :return: list of present_value, profitability, irr, payout, dpi, cash, cash_cum, revenue, income, cost
-        """
-        base_params[sce_var_name] = sce_val
-        # print(base_params)
-        # present_value, profitability, irr, payout, dpi, \
-        # cash, cash_cum, revenue, income, cost = \
-        self.compute(**base_params)
-        # return [present_value, profitability, irr, payout, dpi, cash, cash_cum, revenue, income, cost]
-        return self.present_value
-
-    def generate_scenario(self, n_sce, sim_params, base_params):
-        """
-
-        :param n_sce: Number of scenarios,int, n_sce = 1000,
-        :param sim_params: a dictionary with key is the name of the simulated variable, ex. gas_price_start
-        :param base_params: base parameters dictionary where the base output is computed
-        :return: numpy array of list of present_value, profitability, irr, payout, dpi, cash, cash_cum, revenue,
-        """
-        sim_var = list(sim_params.keys())[0]
-        sim_info = list(sim_params.values())[0]
-        sim_scale = sim_info['scale']
-        sim_type = sim_info['type']
-        sim_loc = sim_info['loc']
-
-        if sim_type == 'normal':
-            sim_arr = np.random.normal(sim_loc, sim_scale, n_sce)
-        elif sim_type == 'logistic':
-            sim_arr = np.random.logistic(sim_loc, sim_scale, n_sce)
-
-        # sim_output = {'irr':[], 'present_value':[], 'payout':[], 'dpi':[], 'profitability':[]}
-        scenario_compute_v = np.vectorize(self.scenario_compute)
-        sim_output = scenario_compute_v(sim_arr, sim_var, base_params)
-        # for sim_val in sim_arr:
-        #     base_params[sim_var] = sim_val
-        #     # print(base_params)
-        #     present_value, profitability, irr, payout, dpi, \
-        #     cash, cash_cum, revenue, income, cost = self.compute(**base_params)
-        #     sim_output['present_value'].append(present_value)
-        #     sim_output['irr'].append(irr)
-        #     sim_output['payout'].append(payout)
-        #     sim_output['profitability'].append(profitability)
-        #     sim_output['dpi'].append(dpi)
-        print(sim_output)
-        return sim_output
+        }
+        self.compute_vectorize(sce_params)
 
 
 if __name__ == "__main__":
@@ -415,15 +538,25 @@ if __name__ == "__main__":
     }
     econ = Economics()
     econ.compute(**params)
-    # econ.plot()
-    sim_params = {'royalty_rate': {'type': 'normal', 'loc': 15.625 / 100, 'scale': 0.01}}
-    n_sce = 10000
-    sim_scale = 0.1
-    sim_loc = 4.15
-    sim_arr = np.random.normal(sim_loc, sim_scale, n_sce)
-    econ.compute_vectorize(n_sce, sim_params, params)
+    sim_params = {'gas_price_start': {'type': 'normal', 'loc': 4.15, 'scale': 0.01}}
+    n_sce = 100000
+    econ.generate_scenario(n_sce, sim_params, params)
     econ.plot_scenario()
-    # sim = econ.compute_vectorize(np.array([4.15]), params)
-    # print(sim)
-    # plt.hist(sim)
-    # plt.show()
+    print(econ.present_value_mean, econ.present_value_std,
+        econ.present_value_10pct, econ.present_value_20pct,
+        econ.present_value_30pct, econ.present_value_40pct,
+        econ.present_value_50pct, econ.present_value_60pct,
+        econ.present_value_70pct, econ.present_value_80pct,
+        econ.present_value_90pct, econ.irr_mean, econ.irr_std,
+        econ.irr_10pct, econ.irr_20pct, econ.irr_30pct, econ.irr_40pct,
+        econ.irr_50pct, econ.irr_60pct, econ.irr_70pct, econ.irr_80pct,
+        econ.irr_90pct, econ.payout_mean, econ.payout_std, econ.payout_10pct,
+        econ.payout_20pct, econ.payout_30pct, econ.payout_40pct,
+        econ.payout_50pct, econ.payout_60pct, econ.payout_70pct, econ.payout_80pct,
+        econ.payout_90pct, econ.dpi_mean, econ.dpi_std, econ.dpi_10pct,
+        econ.dpi_20pct, econ.dpi_30pct, econ.dpi_40pct, econ.dpi_50pct,
+        econ.dpi_60pct, econ.dpi_70pct, econ.dpi_80pct, econ.dpi_90pct,
+        econ.profit_mean, econ.profit_std, econ.profit_10pct,
+        econ.profit_20pct, econ.profit_30pct, econ.profit_40pct,
+        econ.profit_50pct, econ.profit_60pct, econ.profit_70pct,
+        econ.profit_80pct, econ.profit_90pct)

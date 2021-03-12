@@ -33,5 +33,5 @@ n_sce = 10000
 sim_scale = 0.1
 sim_loc = 4.15
 sim_arr = np.random.normal(sim_loc, sim_scale, n_sce)
-econ.compute_vectorize(n_sce, sim_params, params)
-econ.plot_scenario()
+econ.generate_scenario(n_sce, sim_params, params)
+econ.plot_scenario(True)

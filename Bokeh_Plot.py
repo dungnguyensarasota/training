@@ -19,7 +19,7 @@ p = figure(plot_width=400, plot_height=400)
 p.square(df1['mpg'], df1['displ'], size=df1['accel'], color="firebrick", alpha=0.6)
 show(p)
 
-# EXERCISE: Look at the AAPL data from bokeh.sampledata.stocks and create a line plot using it
+# EXERCISE: Look at the AAPL data from bokeh_utils.sampledata.stocks and create a line plot using it
 from bokeh.sampledata.stocks import AAPL
 
 # AAPL.keys()
