@@ -432,21 +432,3 @@ if __name__ == "__main__":
     n_sce = 100000
     econ.generate_scenario(n_sce, sim_params, params)
     econ.plot_scenario()
-    print(econ.present_value_mean, econ.present_value_std,
-        econ.present_value_10pct, econ.present_value_20pct,
-        econ.present_value_30pct, econ.present_value_40pct,
-        econ.present_value_50pct, econ.present_value_60pct,
-        econ.present_value_70pct, econ.present_value_80pct,
-        econ.present_value_90pct, econ.irr_mean, econ.irr_std,
-        econ.irr_10pct, econ.irr_20pct, econ.irr_30pct, econ.irr_40pct,
-        econ.irr_50pct, econ.irr_60pct, econ.irr_70pct, econ.irr_80pct,
-        econ.irr_90pct, econ.payout_mean, econ.payout_std, econ.payout_10pct,
-        econ.payout_20pct, econ.payout_30pct, econ.payout_40pct,
-        econ.payout_50pct, econ.payout_60pct, econ.payout_70pct, econ.payout_80pct,
-        econ.payout_90pct, econ.dpi_mean, econ.dpi_std, econ.dpi_10pct,
-        econ.dpi_20pct, econ.dpi_30pct, econ.dpi_40pct, econ.dpi_50pct,
-        econ.dpi_60pct, econ.dpi_70pct, econ.dpi_80pct, econ.dpi_90pct,
-        econ.profit_mean, econ.profit_std, econ.profit_10pct,
-        econ.profit_20pct, econ.profit_30pct, econ.profit_40pct,
-        econ.profit_50pct, econ.profit_60pct, econ.profit_70pct,
-        econ.profit_80pct, econ.profit_90pct)
