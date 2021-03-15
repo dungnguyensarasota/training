@@ -145,10 +145,12 @@ class Economics:
         net_cash_flow_arr = net_operating_income_arr - investment_arr
         net_cash_flow_cum_arr = np.cumsum(net_cash_flow_arr)
         profit_year_arr = np.where(net_cash_flow_cum_arr > 0)
-        profit_year = profit_year_arr[0][0]
-        cash_before = net_cash_flow_cum_arr[profit_year - 1]
-        cash_after = net_cash_flow_cum_arr[profit_year]
-        slope, payout, r_value, p_value, std_err = linregress([cash_before, cash_after], [profit_year, profit_year + 1])
+        if len(profit_year_arr[0]) > 0:
+            profit_year = profit_year_arr[0][0]
+            cash_before = net_cash_flow_cum_arr[profit_year - 1]
+            cash_after = net_cash_flow_cum_arr[profit_year]
+            slope, payout, r_value, p_value, std_err = linregress([cash_before, cash_after],
+                                                                  [profit_year, profit_year + 1])
 
         discount_by_year_v = np.vectorize(discount_by_year)
         discount_arr = discount_by_year_v(year_arr, discount_rate)
@@ -359,8 +361,8 @@ class Economics:
 
         if sim_type == 'normal':
             sim_arr = np.random.normal(sim_loc, sim_scale, n_sce)
-        elif sim_type == 'logistic':
-            sim_arr = np.random.logistic(sim_loc, sim_scale, n_sce)
+        elif sim_type == 'log':
+            sim_arr = np.random.lognormal(sim_loc, sim_scale, n_sce)
 
         # Create 2-dim array for vectorization
         sim_arr = sim_arr.reshape(n_sce, 1)
@@ -428,7 +430,7 @@ if __name__ == "__main__":
     }
     econ = Economics()
     econ.compute(**params)
-    sim_params = {'gas_price_start': {'type': 'normal', 'loc': 4.15, 'scale': 0.01}}
-    n_sce = 100000
-    econ.generate_scenario(n_sce, sim_params, params)
-    econ.plot_scenario()
+    # sim_params = {'gas_price_start': {'type': 'normal', 'loc': 4.15, 'scale': 0.01}}
+    # n_sce = 100000
+    # econ.generate_scenario(n_sce, sim_params, params)
+    # econ.plot_scenario()
