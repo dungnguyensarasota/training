@@ -112,6 +112,8 @@ class Economics:
         self.cost_sim = None
         self.sim_arr = None
         self.sim_var = None
+        self.tax = None
+        self.royalty = None
 
     def compute(self, **kwargs):
         # TODO: Vectorize the code
@@ -175,6 +177,9 @@ class Economics:
         self.revenue = revenue
         self.income = income
         self.cost = cost
+        self.tax = mineral_tax_arr
+        self.royalty = royalty_arr
+
 
     def compute_vectorize(self, params):
         """
@@ -217,11 +222,11 @@ class Economics:
         revenue = gross_income_arr
         income = net_operating_income_arr
         cost = operating_cost_arr
-        irr = [npf.irr(x) * 100 for x in net_cash_flow_arr]
-        payout = [payout_cal(x) for x in net_cash_flow_cum_arr]
+        # irr = [npf.irr(x) * 100 for x in net_cash_flow_arr]
+        # payout = [payout_cal(x) for x in net_cash_flow_cum_arr]
         self.present_value_sim = present_value
-        self.irr_sim = irr
-        self.payout_sim = payout
+        # self.irr_sim = irr
+        # self.payout_sim = payout
         self.dpi_sim = dpi
         self.profitability_sim = profitability
         self.cash_sim = cash
@@ -231,6 +236,7 @@ class Economics:
         self.cost_sim = cost
         self.sim_arr = sim_arr
         self.sim_var = sim_var
+
 
 
 
