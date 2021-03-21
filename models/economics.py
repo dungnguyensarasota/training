@@ -6,38 +6,20 @@ import scipy as sp
 import numpy_financial as npf
 from scipy import stats
 
-def value_by_year(y, start_value, growth_rate):
-    """
-    :param start_value: float, example start_value = 4.15
-    :param growth_rate: float, example growth_rate = 0.05
-    :param y: int, year number, example y = 3
-    :return: current_value: float
-    """
-    current_value = start_value * (1 + growth_rate) ** (y - 1)
-    return current_value
-
-
-def discount_by_year(y, d_rate):
-    """
-
-    :param d_rate: float, for example discount_rate = 0.1
-    :param y: int, year number, example y = 7
-    :return: discount: float
-    """
-    discount = (1 + d_rate) ** (y - 0.5)
-    return discount
-
 
 def payout_cal(net_cash_flow_cum_arr):
+    payout = None
     profit_year_arr = np.where(net_cash_flow_cum_arr > 0)
-    profit_year = profit_year_arr[0][0]
-    cash_before = net_cash_flow_cum_arr[profit_year - 1]
-    cash_after = net_cash_flow_cum_arr[profit_year]
-    slope, payout, r_value, p_value, std_err = linregress([cash_before, cash_after], [profit_year, profit_year + 1])
+    if len(profit_year_arr[0]) > 0:
+        profit_year = profit_year_arr[0][0]
+        cash_before = net_cash_flow_cum_arr[profit_year - 1]
+        cash_after = net_cash_flow_cum_arr[profit_year]
+        slope, payout, r_value, p_value, std_err = linregress([cash_before, cash_after], [profit_year, profit_year + 1])
     return payout
 
 
 def IRR(cash_flow_arr, year_arr):
+    # TODO: Speed up execution
     """
     :param year_arr: numpy array, dtype = int
     :param cash_flow_arr: numpy array of cash flow, dtype = float
@@ -100,88 +82,19 @@ class Economics:
         self.revenue = None
         self.income = None
         self.cost = None
-        self.present_value_sim = None
-        self.irr_sim = None
-        self.payout_sim = None
-        self.dpi_sim = None
-        self.profitability_sim = None
-        self.cash_sim = None
-        self.cash_cum_sim = None
-        self.revenue_sim = None
-        self.income_sim = None
-        self.cost_sim = None
         self.sim_arr = None
         self.sim_var = None
         self.tax = None
         self.royalty = None
-
-    def compute(self, **kwargs):
-        # TODO: Vectorize the code
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
-        project_length = kwargs['project_length']
-        mineral_tax = kwargs['mineral_tax']
-        royalty_rate = kwargs['royalty_rate']
-        investment = kwargs['investment']
-        operating_cost_start = kwargs['operating_cost_start']
-        opex_increase = kwargs['opex_increase']
-        gas_price_start = kwargs['gas_price_start']
-        gas_price_increase = kwargs['gas_price_increase']
-        discount_rate = kwargs['discount_rate']
-        production_arr = kwargs['production_arr']
-
-        present_value, profitablity, irr, payout, dpi, \
-        cash, cash_cum, revenue, income, cost = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        investment_arr = np.zeros(project_length)
-        investment_arr[0] = investment
-        year_arr = np.arange(1, project_length + 1, 1)
-
-        value_by_year_v = np.vectorize(value_by_year)
-        gas_price_arr = value_by_year_v(year_arr, gas_price_start, gas_price_increase)
-        operating_cost_arr = value_by_year_v(year_arr, operating_cost_start, opex_increase)
-        gross_income_arr = gas_price_arr * production_arr
-        royalty_arr = gross_income_arr * royalty_rate
-        gross_income_after_royalty_arr = gross_income_arr - royalty_arr
-        mineral_tax_arr = gross_income_after_royalty_arr * mineral_tax
-        net_operating_income_arr = gross_income_after_royalty_arr - mineral_tax_arr - operating_cost_arr
-        net_cash_flow_arr = net_operating_income_arr - investment_arr
-        net_cash_flow_cum_arr = np.cumsum(net_cash_flow_arr)
-        profit_year_arr = np.where(net_cash_flow_cum_arr > 0)
-        if len(profit_year_arr[0]) > 0:
-            profit_year = profit_year_arr[0][0]
-            cash_before = net_cash_flow_cum_arr[profit_year - 1]
-            cash_after = net_cash_flow_cum_arr[profit_year]
-            slope, payout, r_value, p_value, std_err = linregress([cash_before, cash_after],
-                                                                  [profit_year, profit_year + 1])
-
-        discount_by_year_v = np.vectorize(discount_by_year)
-        discount_arr = discount_by_year_v(year_arr, discount_rate)
-        discounted_net_operating_income_arr = net_operating_income_arr / discount_arr
-        present_value = discounted_net_operating_income_arr.sum()
-        profitability = net_operating_income_arr.sum() / investment
-
-        irr = IRR(net_cash_flow_arr, year_arr)
-        dpi = present_value / investment
-        cash = net_cash_flow_arr
-        cash_cum = net_cash_flow_cum_arr
-        revenue = gross_income_arr
-        income = net_operating_income_arr
-        cost = operating_cost_arr
-        self.present_value = present_value
-        self.irr = irr
-        self.payout = payout
-        self.dpi = dpi
-        self.profitability = profitability
-        self.cash = cash
-        self.cash_cum = cash_cum
-        self.revenue = revenue
-        self.income = income
-        self.cost = cost
-        self.tax = mineral_tax_arr
-        self.royalty = royalty_arr
+        self.investment = None
+        self.investment_pv = None
+        self.sale_pv = None
+        self.opex_pv = None
+        self.tax_pv = None
+        self.royalty_pv = None
 
 
-    def compute_vectorize(self, params):
+    def compute(self, params, runIRR):
         """
         compute_vectorize computes economics for arrays of input
         :param : a dictionary with following keys:
@@ -208,13 +121,18 @@ class Economics:
         sim_var = params['sim_var']
 
         gross_income_arr = gas_price_arr * production_arr
+        # print(gross_income_arr)
         royalty_arr = gross_income_arr * royalty_arr
+        # print(royalty_arr)
         gross_income_after_royalty_arr = gross_income_arr - royalty_arr
+        mineral_tax_arr = gross_income_after_royalty_arr * mineral_tax_arr
+        # print(mineral_tax_arr)
         net_operating_income_arr = gross_income_after_royalty_arr - mineral_tax_arr - operating_cost_arr
         net_cash_flow_arr = net_operating_income_arr - investment_arr
         net_cash_flow_cum_arr = np.cumsum(net_cash_flow_arr, axis=1)
-        discounted_net_operating_income_arr = net_operating_income_arr / discount_arr
-        present_value = np.sum(discounted_net_operating_income_arr, axis=1)
+        discounted_net_cash_flow_arr = net_cash_flow_arr / discount_arr
+        # print(discounted_net_operating_income_arr)
+        present_value = np.sum(discounted_net_cash_flow_arr, axis=1)
         dpi = present_value / investment_arr[:, 0]
         profitability = np.sum(net_operating_income_arr, axis=1) / investment_arr[:, 0]
         cash = net_cash_flow_arr
@@ -222,45 +140,51 @@ class Economics:
         revenue = gross_income_arr
         income = net_operating_income_arr
         cost = operating_cost_arr
-        # irr = [npf.irr(x) * 100 for x in net_cash_flow_arr]
-        # payout = [payout_cal(x) for x in net_cash_flow_cum_arr]
-        self.present_value_sim = present_value
-        # self.irr_sim = irr
-        # self.payout_sim = payout
-        self.dpi_sim = dpi
-        self.profitability_sim = profitability
-        self.cash_sim = cash
-        self.cash_cum_sim = cash_cum
-        self.revenue_sim = revenue
-        self.income_sim = income
-        self.cost_sim = cost
+        if runIRR:
+            irr = [npf.irr(x) * 100 for x in net_cash_flow_arr]
+            payout = [payout_cal(x) for x in net_cash_flow_cum_arr]
+            self.irr = irr
+            self.payout = payout
+        self.present_value = present_value
+        self.dpi = dpi
+        self.profitability = profitability
+        self.cash = cash
+        self.cash_cum = cash_cum
+        self.revenue = revenue
+        self.income = income
+        self.cost = cost
         self.sim_arr = sim_arr
         self.sim_var = sim_var
-
-
-
+        self.tax = mineral_tax_arr
+        self.royalty = royalty_arr
+        self.investment = investment_arr
+        self.tax_pv = np.sum(mineral_tax_arr/discount_arr, axis=1)
+        self.royalty_pv = np.sum(royalty_arr/discount_arr, axis=1)
+        self.investment_pv = np.sum(investment_arr/discount_arr, axis=1)
+        self.sale_pv = np.sum(gross_income_arr/discount_arr, axis=1)
+        self.opex_pv = np.sum(cost/discount_arr, axis=1)
 
     def plot(self):
         fig, axs = plt.subplots(2, 2)
         cash_ax = axs[0, 0]
-        cash_ax.plot(self.cash)
+        cash_ax.plot(self.cash[0])
         cash_ax.axhline(0, color='black', linewidth=1)
         cash_ax.xaxis.set_minor_locator(MultipleLocator(1))
         cash_ax.xaxis.set_major_locator(MultipleLocator(5))
         cash_ax.set_title('Cash Flow')
         cash_cum_ax = axs[0, 1]
-        cash_cum_ax.plot(self.cash_cum, 'tab:orange')
+        cash_cum_ax.plot(self.cash_cum[0], 'tab:orange')
         cash_cum_ax.axhline(0, color='black', linewidth=1)
         cash_cum_ax.xaxis.set_minor_locator(MultipleLocator(1))
         cash_cum_ax.xaxis.set_major_locator(MultipleLocator(5))
         cash_cum_ax.set_title('Cumulative Cash Flow')
         revenue_ax = axs[1, 0]
-        revenue_ax.plot(self.revenue, 'tab:green')
+        revenue_ax.plot(self.revenue[0], 'tab:green')
         revenue_ax.xaxis.set_minor_locator(MultipleLocator(1))
         revenue_ax.xaxis.set_major_locator(MultipleLocator(5))
         revenue_ax.set_title('Revenue')
         income_ax = axs[1, 1]
-        income_ax.plot(self.income, 'tab:green')
+        income_ax.plot(self.income[0], 'tab:green')
         income_ax.xaxis.set_minor_locator(MultipleLocator(1))
         income_ax.xaxis.set_major_locator(MultipleLocator(5))
         income_ax.set_title('Net Income')
@@ -272,24 +196,24 @@ class Economics:
         sim_ax.hist(self.sim_arr)
         sim_ax.set_title(self.sim_var.capitalize() + " Input")
         npv_ax = axs[0, 1]
-        npv_ax.hist(self.present_value_sim)
+        npv_ax.hist(self.present_value)
         npv_ax.set_title('Present Value')
         irr_ax = axs[0, 2]
-        irr_ax.hist(self.irr_sim)
+        # irr_ax.hist(self.irr)
         irr_ax.set_title('IRR')
         payout_ax = axs[1, 0]
-        payout_ax.hist(self.payout_sim)
+        # payout_ax.hist(self.payout)
         payout_ax.set_title('Payout')
         dpi_ax = axs[1, 1]
-        dpi_ax.hist(self.dpi_sim)
+        dpi_ax.hist(self.dpi)
         dpi_ax.set_title('DPI')
         profit_ax = axs[1, 2]
-        profit_ax.hist(self.profitability_sim)
+        profit_ax.hist(self.profitability)
         profit_ax.set_title('Profitability')
         if show:
             plt.show()
 
-    def generate_scenario(self, n_sce, sim_params, params):
+    def generate_scenario(self, n_sce, sim_params, params, runIRR = False):
         """
 
         :param n_sce: Number of scenarios,int, n_sce = 1000,
@@ -311,53 +235,28 @@ class Economics:
 
         # Get default values
         project_length = params['project_length']
-        mineral_tax = params['mineral_tax']
-        royalty_rate = params['royalty_rate']
-        investment = params['investment']
-        operating_cost_start = params['operating_cost_start']
-        opex_increase = params['opex_increase']
-        gas_price_start = params['gas_price_start']
-        gas_price_increase = params['gas_price_increase']
-        discount_rate = params['discount_rate']
-        production_int_arr = params['production_arr']
+        mineral_tax_arr = np.tile([params['mineral_tax']], (n_sce, 1))
+        royalty_arr = np.tile([params['royalty_rate']], (n_sce, 1))
+        investment_arr = np.tile([0], (n_sce, project_length))
+        investment_arr[:, 0] = params['investment']
+        operating_cost_start = np.tile([params['operating_cost_start']], project_length)
+        opex_increase = np.tile([params['opex_increase']], project_length)
+        gas_price_start = np.tile([params['gas_price_start']], project_length)
+        gas_price_increase = np.tile([params['gas_price_increase']], project_length)
+        discount_rate = np.tile([params['discount_rate']], project_length)
+        production_arr = np.tile([params['production_arr']], (n_sce, 1))
+
         # Initialize default 2-dim array
         year_arr = np.arange(1, project_length + 1, 1)
-        value_by_year_v = np.vectorize(value_by_year)
-        gas_price_unit_arr = value_by_year_v(year_arr, 1, gas_price_increase)
-        operating_cost_unit_arr = value_by_year_v(year_arr, 1, opex_increase)
-
-        # Investment
-        investment_init_arr = np.zeros(project_length)
-        investment_init_arr[0] = investment
-        investment_arr = np.zeros((n_sce, project_length))
-        investment_arr[:, ] = investment_init_arr
 
         # Cost
-        operating_cost_arr = np.zeros((n_sce, project_length))
-        operating_cost_arr[:, ] = operating_cost_unit_arr * operating_cost_start
+        operating_cost_arr = np.tile(np.power(opex_increase+1, year_arr - 1), (n_sce, 1)) * operating_cost_start
 
         # Gas Price
-        gas_price_arr = np.zeros((n_sce, project_length))
-        gas_price_arr[:, ] = gas_price_unit_arr * gas_price_start
-
-        # Mineral Tax
-        mineral_tax_arr = np.zeros((n_sce, 1))
-        mineral_tax_arr[:, ] = mineral_tax
-
-        # Royalty Rate
-        royalty_arr = np.zeros((n_sce, 1))
-        royalty_arr[:, ] = royalty_rate
+        gas_price_arr = np.tile(np.power(gas_price_increase+1, year_arr - 1), (n_sce, 1)) * gas_price_start
 
         # discount array
-        discount_by_year_v = np.vectorize(discount_by_year)
-        discount_init_arr = discount_by_year_v(year_arr, discount_rate)
-        discount_arr = np.zeros((n_sce, project_length))
-        discount_arr[:, ] = discount_init_arr
-
-        # Production
-        production_arr = np.zeros((n_sce, project_length))
-        production_arr[:, ] = production_int_arr
-
+        discount_arr = np.tile(np.power(discount_rate + 1, year_arr - 0.5), (n_sce, 1))
         # Processing simulation info
         sim_var = list(sim_params.keys())[0]
         sim_info = list(sim_params.values())[0]
@@ -369,21 +268,19 @@ class Economics:
             sim_arr = np.random.normal(sim_loc, sim_scale, n_sce)
         elif sim_type == 'log':
             sim_arr = np.random.lognormal(sim_loc, sim_scale, n_sce)
+            print("log normal")
 
         # Create 2-dim array for vectorization
         sim_arr = sim_arr.reshape(n_sce, 1)
         if sim_var == 'gas_price_start':
-            gas_price_arr = sim_arr * gas_price_unit_arr
+            gas_price_arr = np.tile(np.power(gas_price_increase+1, year_arr - 1), (n_sce, 1)) * sim_arr
         elif sim_var == 'gas_price_increase':
-            gas_price_increase_arr = np.zeros((n_sce, project_length))
-            gas_price_increase_arr[:, ] = 1 + sim_arr
-            gas_price_arr = np.power(gas_price_increase_arr, year_arr - 1) * gas_price_start
+            gas_price_arr = np.power(np.tile(1 + sim_arr, (1, project_length)), year_arr - 1) * gas_price_start
         elif sim_var == 'operating_cost_start':
-            operating_cost_arr = sim_arr * operating_cost_unit_arr
+            operating_cost_arr = np.tile(np.power(opex_increase+1, year_arr - 1), (n_sce, 1)) * sim_arr
         elif sim_var == 'opex_increase':
-            opex_increase_arr = np.zeros((n_sce, project_length))
-            opex_increase_arr[:, ] = 1 + sim_arr
-            operating_cost_arr = np.power(opex_increase_arr, year_arr - 1) * operating_cost_start
+            operating_cost_arr = np.power(np.tile(1 + sim_arr, (1, project_length)), year_arr - 1) \
+                                 * operating_cost_start
         elif sim_var == 'mineral_tax':
             mineral_tax_arr = sim_arr
         elif sim_var == 'royalty_rate':
@@ -407,7 +304,7 @@ class Economics:
             'sim_var': sim_var
 
         }
-        self.compute_vectorize(sce_params)
+        self.compute(sce_params, runIRR)
 
 
 if __name__ == "__main__":
@@ -435,8 +332,12 @@ if __name__ == "__main__":
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
     econ = Economics()
-    econ.compute(**params)
-    # sim_params = {'gas_price_start': {'type': 'normal', 'loc': 4.15, 'scale': 0.01}}
-    # n_sce = 100000
-    # econ.generate_scenario(n_sce, sim_params, params)
-    # econ.plot_scenario()
+    # econ.compute(**params)
+    # sim_params = {'operating_cost_start': {'type': 'log', 'loc': 600000, 'scale': 500}}
+    n_sce = 20000
+    # sim_params = {'gas_price_start':{'type': 'log', 'loc': 4.7, 'scale': 0.05}}
+    sim_params = {'gas_price_start': {'type': 'log', 'loc': 4.15, 'scale': 0.5}}
+    econ.generate_scenario(n_sce, sim_params, params, True)
+    print(econ.present_value, econ.dpi, econ.payout, econ.irr, econ.profitability)
+    # print(econ.cash)
+    econ.plot_scenario(True)

@@ -28,16 +28,20 @@ class TestEconomicMethods(unittest.TestCase):
         'operating_cost_start': operating_cost_start, 'investment': investment,
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
-    econ = Economics()
-    econ.compute(**params)
-    present_value = econ.present_value
-    irr = econ.irr
-    dpi = econ.dpi
-    profitability = econ.profitability
-    payout = econ.payout
+    sim_params = {'gas_price_start': {'type': 'normal', 'loc': 4.15, 'scale': 0}}
+    sim_params = {'operating_cost_start': {'type': 'normal', 'loc': 6000, 'scale': 0}}
+    n_sce = 1
 
+    econ = Economics()
+    econ.generate_scenario(n_sce, sim_params, params, True)
+    present_value = econ.present_value[0]
+    irr = econ.irr[0]
+    dpi = econ.dpi[0]
+    profitability = econ.profitability[0]
+    payout = econ.payout[0]
+    print(present_value, irr, dpi, profitability, payout)
     def test_npv(self):
-        self.assertAlmostEqual(self.present_value, 457740.5772208976, places=5)
+        self.assertAlmostEqual(self.present_value, 171701.80044722, places=5)
 
     def test_profitability(self):
         self.assertAlmostEqual(self.profitability, 2.801266038055139, places=5)
@@ -49,7 +53,7 @@ class TestEconomicMethods(unittest.TestCase):
         self.assertAlmostEqual(self.payout, 4.031194375432525, places=5)
 
     def test_dpi(self):
-        self.assertAlmostEqual(self.dpi, 1.5258019240696588, places=5)
+        self.assertAlmostEqual(self.dpi, 0.57233933, places=5)
 
 if __name__ == '__main__':
     unittest.main()

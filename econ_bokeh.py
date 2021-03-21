@@ -1,11 +1,13 @@
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import CustomJS, Slider, Button, BasicTickFormatter, LinearAxis, Range1d
+from bokeh.models import CustomJS, Slider, Button, BasicTickFormatter, LinearAxis, Range1d, LabelSet
 from bokeh.plotting import ColumnDataSource, figure, output_file, show, curdoc
 from models.economics import Economics
 from bokeh.models.widgets import DataTable, TableColumn, Div, Dropdown, Select
 from bokeh.palettes import Spectral4, Spectral3
 from bokeh.core.properties import value
+from bokeh.models.formatters import NumeralTickFormatter
+import pandas as pd
 
 project_length = 20
 mineral_tax = 2.5 / 100
@@ -30,17 +32,19 @@ params = {
     'operating_cost_start': operating_cost_start, 'investment': investment,
     'production_arr': production_arr, 'gas_price_increase': gas_price_increase
 }
-
+sim_params = {'operating_cost_start': {'type': 'normal', 'loc': 6000, 'scale': 0}}
 econ = Economics()
-econ.compute(**params)
+econ.generate_scenario(1, sim_params, params, True)
+
 plot_dict = {
-    "cash": {"data": econ.cash, "name": "Cash Flow", "neg_val": True},
-    "cash_cum": {"data": econ.cash_cum, "name": "Cash Cummulative", "neg_val": True},
-    "revenue": {"data": econ.revenue, "name": "Revenue", "neg_val": False},
-    "income": {"data": econ.income, "name": "Income", "neg_val": False},
-    "cost": {"data": econ.cost * -1, "name": "Cost", "neg_val": True},
-    "tax": {"data": econ.tax * -1, "name": "Tax", "neg_val": True},
-    "royalty": {"data": econ.royalty * -1, "name": "Royalty", "neg_val": True}
+    "cash": {"data": econ.cash[0], "name": "Cash Flow", "neg_val": True},
+    "cash_cum": {"data": econ.cash_cum[0], "name": "Cash Cummulative", "neg_val": True},
+    "revenue": {"data": econ.revenue[0], "name": "Revenue", "neg_val": False},
+    "income": {"data": econ.income[0], "name": "Income", "neg_val": False},
+    "cost": {"data": econ.cost[0] * -1, "name": "Cost", "neg_val": True},
+    "tax": {"data": econ.tax[0] * -1, "name": "Tax", "neg_val": True},
+    "royalty": {"data": econ.royalty[0] * -1, "name": "Royalty", "neg_val": True},
+    "investment": {"data": econ.investment[0] * -1, "name": "Investment", "neg_val": True}
 }
 
 for k in plot_dict.keys():
@@ -64,11 +68,12 @@ print(plot_dict["cost"]["data"])
 stack_data = {
     'x': range(1, project_length + 1),
     'Cash Flow': plot_dict["cash"]["data"],
+    'Investment': plot_dict["investment"]["data"],
     'Cost': plot_dict["cost"]["data"],
     'Tax': plot_dict["tax"]["data"],
     'Royalty': plot_dict["royalty"]["data"],
 }
-stack_var = ["Cost", "Tax", "Royalty"]
+stack_var = ["Investment", "Cost", "Tax", "Royalty"]
 cash_plot = figure(plot_height=300, plot_width=700, title="Cash Flow and Cash Cummulative".upper(),
                    tools="crosshair,pan,reset,save,wheel_zoom",
                    y_range=[plot_dict["cash_cum"]["min"], plot_dict["cash_cum"]["max"]],
@@ -87,31 +92,67 @@ cash_plot.right[0].formatter.use_scientific = False
 cash_plot.legend.location = 'bottom_right'
 cash_plot.legend.orientation = "horizontal"
 # plot revenue, income and cost
-min_income = plot_dict["cost"]["min"] + plot_dict["tax"]["min"] + plot_dict["royalty"]["min"]
-max_income = max(plot_dict["income"]["max"], plot_dict["revenue"]["max"])
-rev_plot = figure(plot_height=300, plot_width=700, title="Revenue, Income and Cost".upper(),
+min_income = plot_dict["investment"]["min"] + plot_dict["cost"]["min"] + plot_dict["tax"]["min"] \
+             + plot_dict["royalty"]["min"]
+max_income = max(plot_dict["cash_cum"]["max"], plot_dict["revenue"]["max"])
+rev_plot = figure(plot_height=300, plot_width=700, title="Cash, NOI and Cost".upper(),
                   tools="crosshair,pan,reset,save,wheel_zoom",
                   y_range=[min_income * 1.1, max_income * 1.1], x_range=[0, project_length + 1])
 rev_plot.title.text_font_size = "15pt"
 rev_plot.left[0].formatter.use_scientific = False
-rev_plot.vbar(x='x', top='y', source=plot_dict["income"]["source"], width=0.70, color="blue", legend="Income")
+rev_plot.vbar(x='x', top='y', source=plot_dict["income"]["source"], width=0.70, color="blue", legend="NOI")
 rev_plot.extra_y_ranges = {"y2": Range1d(start=plot_dict["cost"]["min"] + plot_dict["tax"]["min"]
                                                + plot_dict["royalty"]["min"], end=50000)}
 rev_plot.add_layout(LinearAxis(y_range_name="y2"), 'right')
 rev_plot.right[0].formatter.use_scientific = False
-rev_plot.line('x', 'y', source=plot_dict["revenue"]["source"], line_width=3, line_alpha=0.6, color="green",
-              legend="Revenue")
-rev_plot.vbar_stack(stack_var, x='x', width=0.7, color=Spectral3,
+rev_plot.line('x', 'y', source=plot_dict["cash_cum"]["source"], line_width=3, line_alpha=0.6, color="green",
+              legend="Cash Cummulative")
+rev_plot.vbar_stack(stack_var, x='x', width=0.7, color=Spectral4,
                     source=stack_data,
                     # y_range_name="y2",
                     legend=[value(x) for x in stack_var]
                     )
-rev_plot.legend.location = 'top_right'
+rev_plot.legend.location = 'bottom_right'
 rev_plot.legend.orientation = "horizontal"
+
+# waterfall chart
+# prepare data
+wf_index = ["Sale", "Investment", "Operating Cost", "Mineral Tax", "Royalty"]
+wf_data = {"amount": [econ.sale_pv[0], econ.investment_pv[0] * -1, econ.opex_pv[0] * -1,
+                      econ.tax_pv[0] * -1, econ.royalty_pv[0] * -1]}
+wf_df = pd.DataFrame(data=wf_data, index=wf_index)
+net = wf_df["amount"].sum()
+wf_df['running_total'] = wf_df["amount"].cumsum()
+wf_df['y_start'] = wf_df['running_total'] - wf_df['amount']
+wf_df['label_pos'] = wf_df['running_total']
+wf_df_net = pd.DataFrame.from_records([(net, net, 0, net)],
+                                      columns=['amount', 'running_total', 'y_start', 'label_pos'],
+                                      index=["net"])
+wf_df = wf_df.append(wf_df_net)
+print(wf_df)
+wf_df["color"] = "green"
+wf_df.loc[wf_df.amount < 0, 'color'] = 'red'
+wf_df.loc[wf_df.amount < 0, 'label_pos'] = wf_df.label_pos - 80000
+wf_df["bar_label"] = wf_df["amount"].map('{:,.0f}'.format)
+# print(wf_df)
+wf_source = ColumnDataSource(wf_df)
+p = figure(x_range=list(wf_df.index), y_range=(0, net + 1000000),
+           plot_width=700, title="Sales Waterfall".upper(), plot_height=300,
+           tools="crosshair,pan,reset,save,wheel_zoom")
+p.title.text_font_size = "15pt"
+p.segment(x0='index', y0='y_start', x1="index", y1='running_total',
+          source=wf_source, color="color", line_width=55)
+p.grid.grid_line_alpha = 0.3
+p.yaxis[0].formatter = NumeralTickFormatter(format="($ 0 a)")
+p.xaxis.axis_label = "Transactions"
+labels = LabelSet(x='index', y='label_pos', text='bar_label',
+                  text_font_size="8pt", level='glyph',
+                  x_offset=-20, y_offset=0, source=wf_source)
+p.add_layout(labels)
 # Attributes table
 
 attributes = ['NPV', 'IRR', 'Payout', 'Profitability', 'DPI']
-vals = [econ.present_value, econ.irr, econ.payout, econ.profitability, econ.dpi]
+vals = [econ.present_value[0], econ.irr[0], econ.payout[0], econ.profitability[0], econ.dpi[0]]
 vals = [np.round(a, 2) for a in vals]
 table_source = ColumnDataSource(data=dict(attributes=attributes, vals=vals))
 
@@ -153,16 +194,17 @@ def update_data():
         'operating_cost_start': operating_cost_start, 'investment': investment,
         'production_arr': production_arr, 'gas_price_increase': gas_price_increase
     }
-
+    sim_params = {'operating_cost_start': {'type': 'normal', 'loc': operating_cost_start, 'scale': 0}}
     econ = Economics()
-    econ.compute(**params)
-    plot_dict["cash"]["data"] = econ.cash
-    plot_dict["cash_cum"]["data"] = econ.cash_cum
-    plot_dict["revenue"]["data"] = econ.revenue
-    plot_dict["income"]["data"] = econ.income
-    plot_dict["cost"]["data"] = econ.cost * -1
-    plot_dict["tax"]["data"] = econ.tax * -1
-    plot_dict["royalty"]["data"] = econ.royalty * -1
+    econ.generate_scenario(1, sim_params, params, True)
+    plot_dict["cash"]["data"] = econ.cash[0]
+    plot_dict["cash_cum"]["data"] = econ.cash_cum[0]
+    plot_dict["revenue"]["data"] = econ.revenue[0]
+    plot_dict["income"]["data"] = econ.income[0]
+    plot_dict["cost"]["data"] = econ.cost[0] * -1
+    plot_dict["tax"]["data"] = econ.tax[0] * -1
+    plot_dict["royalty"]["data"] = econ.royalty[0] * -1
+    plot_dict["investment"]["data"] = econ.investment[0] * -1
 
     for k in plot_dict.keys():
         plot_info = plot_dict[k]
@@ -173,17 +215,51 @@ def update_data():
     stack_data["Cost"] = plot_dict["cost"]["data"]
     stack_data["Tax"] = plot_dict["tax"]["data"]
     stack_data["Royalty"] = plot_dict["royalty"]["data"]
+    stack_data["Investment"] = plot_dict["investment"]["data"]
 
-    rev_plot.vbar_stack(stack_var, x='x', width=0.7, color=Spectral3,
+    rev_plot.vbar_stack(stack_var, x='x', width=0.7, color=Spectral4,
                         source=stack_data,
                         # y_range_name="y2",
                         # legend=[value(x) for x in stack_var]
                         )
     # print(stack_data["Cost"])
     # Update table
-    vals = [econ.present_value, econ.irr, econ.payout, econ.profitability, econ.dpi]
+    vals = [econ.present_value[0], econ.irr[0], econ.payout[0], econ.profitability[0], econ.dpi[0]]
     vals = [np.round(a, 2) for a in vals]
     table_source.data = dict(attributes=attributes, vals=vals)
+    # waterfall chart
+    # prepare data
+    wf_index = ["Sale", "Investment", "Operating Cost", "Mineral Tax", "Royalty"]
+    wf_data = {"amount": [econ.sale_pv[0], econ.investment_pv[0] * -1, econ.opex_pv[0] * -1,
+                          econ.tax_pv[0] * -1, econ.royalty_pv[0] * -1]}
+    wf_df = pd.DataFrame(data=wf_data, index=wf_index)
+    net = wf_df["amount"].sum()
+    wf_df['running_total'] = wf_df["amount"].cumsum()
+    wf_df['y_start'] = wf_df['running_total'] - wf_df['amount']
+    wf_df['label_pos'] = wf_df['running_total']
+    wf_df_net = pd.DataFrame.from_records([(net, net, 0, net)],
+                                          columns=['amount', 'running_total', 'y_start', 'label_pos'],
+                                          index=["net"])
+    wf_df = wf_df.append(wf_df_net)
+    wf_df["color"] = "green"
+    wf_df.loc[wf_df.amount < 0, 'color'] = 'red'
+    wf_df.loc[wf_df.amount < 0, 'label_pos'] = wf_df.label_pos - 80000
+    wf_df["bar_label"] = wf_df["amount"].map('{:,.0f}'.format)
+    wf_source = ColumnDataSource(wf_df)
+    p = figure(x_range=list(wf_df.index), y_range=(0, net + 1000000),
+               plot_width=700, title="Sales Waterfall".upper(), plot_height=300,
+               tools="crosshair,pan,reset,save,wheel_zoom")
+    p.title.text_font_size = "15pt"
+    p.segment(x0='index', y0='y_start', x1="index", y1='running_total',
+              source=wf_source, color="color", line_width=55)
+    p.grid.grid_line_alpha = 0.3
+    p.yaxis[0].formatter = NumeralTickFormatter(format="($ 0 a)")
+    p.xaxis.axis_label = "Transactions"
+    labels = LabelSet(x='index', y='label_pos', text='bar_label',
+                      text_font_size="8pt", level='glyph',
+                      x_offset=-20, y_offset=0, source=wf_source)
+    p.add_layout(labels)
+    water_chart.children[0] = p
 
 
 button.on_click(update_data)
@@ -277,7 +353,7 @@ def update_slider(attr, old, new):
 nce_slider = Slider(start=1000, end=1000000, value=10000, step=1000, title="Number of Scenario")
 dropdown_menu = [x for x in sim_dict.keys()]
 dropdown = Select(title="Variable:", value="Gas Price", options=dropdown_menu)
-type_dropdown = Select(title="Distribution:", value="Norma;", options=["Nomal", "Log Normal"])
+type_dropdown = Select(title="Distribution:", value="Normal", options=["Normal", "Log Normal"])
 dropdown.on_change("value", update_slider)
 
 for k in sim_dict.keys():
@@ -303,11 +379,11 @@ econ.generate_scenario(n_sce, sim_params, params)
 
 hist_dict = {
     "Input": {"data": econ.sim_arr},
-    "Present Value": {"data": econ.present_value_sim},
-    # "Internal Rate of Returns": {"data": econ.irr_sim},
-    # "Payout": {"data": econ.payout_sim},
-    "Profitability": {"data": econ.profitability_sim},
-    "DPI": {"data": econ.dpi_sim},
+    "Present Value": {"data": econ.present_value},
+    # "Internal Rate of Returns": {"data": econ.irr},
+    # "Payout": {"data": econ.payout},
+    "Profitability": {"data": econ.profitability},
+    "DPI": {"data": econ.dpi},
 }
 
 for k in hist_dict.keys():
@@ -339,13 +415,14 @@ def run_simulation():
     else:
         sim_type = "log"
     sim_params = {sim_var: {'type': sim_type, 'loc': sim_loc, 'scale': sim_scale}}
+    print(sim_params)
     econ.generate_scenario(n_sce, sim_params, params)
     hist_dict["Input"]["data"] = econ.sim_arr
-    hist_dict["Present Value"]["data"] = econ.present_value_sim
-    # hist_dict["Internal Rate of Returns"]["data"] = econ.irr_sim
-    # hist_dict["Payout"]["data"] = econ.payout_sim
-    hist_dict["Profitability"]["data"] = econ.profitability_sim
-    hist_dict["DPI"]["data"] = econ.dpi_sim
+    hist_dict["Present Value"]["data"] = econ.present_value
+    # hist_dict["Internal Rate of Returns"]["data"] = econ.irr
+    # hist_dict["Payout"]["data"] = econ.payout
+    hist_dict["Profitability"]["data"] = econ.profitability
+    hist_dict["DPI"]["data"] = econ.dpi
     for k in hist_dict.keys():
         if k == "Input":
             figure_title = "Input Distribution"
@@ -364,6 +441,8 @@ def run_simulation():
     hist3_row.children[0] = hist_dict["Profitability"]["figure"]
     hist3_row.children[1] = hist_dict["DPI"]["figure"]
 
+
+water_chart = row(p)
 sim_button.on_click(run_simulation)
 hist1_row = row(hist_dict["Input"]["figure"], hist_dict["Present Value"]["figure"])
 hist3_row = row(hist_dict["Profitability"]["figure"], hist_dict["DPI"]["figure"])
@@ -372,7 +451,10 @@ layout = column(
                                                                                                tax_slider,
                                                                                                royalty_slider,
                                                                                                discount_slider)),
-    row(data_table), row(cash_plot), row(rev_plot),
+    row(data_table),
+    # row(cash_plot),
+    row(rev_plot),
+    water_chart,
     row(nce_slider), row(dropdown), row(type_dropdown),
     sim_dict["Gas Price"]["Slider"],
     sim_dict["Gas Price Growth Rate"]["Slider"],
@@ -393,4 +475,4 @@ layout = column(
 curdoc().add_root(layout)
 # output_file("econ.html", title="Economic Project Example")
 #
-# show(layout)
+show(layout)
